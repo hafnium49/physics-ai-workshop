@@ -20,9 +20,9 @@ Build and validate the full demo pipeline for the Physics-AI workshop. Material 
 
 ---
 
-## Step 2: Create the MJPEG live streamer helper
+## Step 2: Create the MJPEG live streamer helper — DONE
 
-**File:** `mujoco_streamer.py`
+**File:** `mujoco_streamer.py` (created, verified: starts/stops cleanly)
 
 3-line API for Claude:
 ```python
@@ -50,9 +50,9 @@ Implementation details:
 
 ---
 
-## Step 3: Update assembly script with live stream (Sprint 1)
+## Step 3: Update assembly script with live stream (Sprint 1) — DONE
 
-**File:** `scripts/01_validate_assembly.py` (update existing)
+**File:** `scripts/01_validate_assembly.py` (updated, verified)
 
 - Stream live via `LiveStreamer` (with .mp4 fallback)
 - `while True` loop with Ctrl+C to stop
@@ -61,9 +61,9 @@ Implementation details:
 
 ---
 
-## Step 4: Update baseline PID script (Sprint 2)
+## Step 4: Update baseline PID script (Sprint 2) — DONE
 
-**File:** `scripts/02_pid_baseline.py` (update existing)
+**File:** `scripts/02_pid_baseline.py` (updated, verified: 0.8s survival with wrong baseline)
 
 - Add `LiveStreamer` integration
 - `while True` loop with auto-reset on ball fall (reposition ball, restart timer)
@@ -73,9 +73,9 @@ Implementation details:
 
 ---
 
-## Step 5: Create disturbance challenge script (Sprint 3 content)
+## Step 5: Create disturbance challenge script (Sprint 3 content) — DONE
 
-**File:** `scripts/04_challenge.py` (NEW)
+**File:** `scripts/04_challenge.py` (created, syntax verified)
 
 Progressive difficulty that restores the tuning arc:
 

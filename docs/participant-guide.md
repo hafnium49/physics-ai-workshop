@@ -47,7 +47,7 @@ You should see the bottom-left of VS Code change to show you're connected remote
 
 You're now talking to Claude Code. It already knows about the workshop, the robot model, and the streaming setup — just tell it what you want to do.
 
-> **Your streaming port** is shown on your printed card (e.g., 8081). When Claude asks about ports or you want to specify one, use this number.
+> **Your streaming port** is shown on your printed card (e.g., 18081). When Claude asks about ports or you want to specify one, use this number.
 
 ---
 
@@ -61,7 +61,7 @@ Before the workshop started, the host ran a live demo where Claude Code discover
 
 Since we're working over SSH, there are no graphical windows. Instead, your simulation runs on the server and **streams live video to your browser**.
 
-When Claude runs a simulation script, you'll see a pop-up in the bottom-right corner of VS Code saying something like *"Your application running on port 8080 is available."* Click **"Open in Browser"** to watch the robot simulation in real time.
+When Claude runs a simulation script, you'll see a pop-up in the bottom-right corner of VS Code saying something like *"Your application running on port 18081 is available."* Click **"Open in Browser"** to watch the robot simulation in real time.
 
 If you miss the pop-up, go to the **Ports** tab at the bottom of VS Code and click the globe icon next to the port number.
 
@@ -77,7 +77,7 @@ The simulation model is already pre-built — a Franka Panda robotic arm holding
 
 Copy and paste this into Claude:
 
-> Read the panda_ball_balance.xml model file. Write a Python script that loads this model, places the ball on the plate, and streams the simulation live using the mujoco_streamer.py helper. Hold the arm at the home pose. Let me watch the ball fall off naturally.
+> Read the panda_ball_balance.xml model file. Write a Python script that loads this model, places the ball on the plate, and streams the simulation live using the mujoco_streamer.py helper on my assigned port. Hold the arm at the home pose. Let me watch the ball fall off naturally.
 
 Watch the browser — you'll see the robot arm, the plate, and the ball rolling off. That's expected! The arm isn't actively balancing yet.
 

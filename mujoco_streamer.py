@@ -9,12 +9,13 @@ not thread-safe. Pass the already-rendered numpy array to streamer.update().
 
 Usage (3 lines):
     from mujoco_streamer import LiveStreamer
-    streamer = LiveStreamer(port=8080)
+    streamer = LiveStreamer()
     streamer.start()
     # In simulation loop: streamer.update(renderer.render())
 """
 
 import io
+import os
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from socketserver import ThreadingMixIn
@@ -89,13 +90,15 @@ class LiveStreamer:
     MJPEG live streamer for MuJoCo simulations.
 
     Public API:
-        streamer = LiveStreamer(port=8080)
+        streamer = LiveStreamer()
         streamer.start()
         streamer.update(rgb_array)   # call from simulation loop
         streamer.stop()              # clean shutdown
     """
 
-    def __init__(self, port=8080):
+    def __init__(self, port=None):
+        if port is None:
+            port = int(os.environ.get("STREAM_PORT", 18080))
         self._port = port
         self._stream_state = _StreamState()
         self._running = False

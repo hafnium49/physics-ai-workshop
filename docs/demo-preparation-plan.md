@@ -27,7 +27,7 @@ Build and validate the full demo pipeline for the Physics-AI workshop. Material 
 3-line API for Claude:
 ```python
 from mujoco_streamer import LiveStreamer
-streamer = LiveStreamer(port=8080)
+streamer = LiveStreamer()
 streamer.start()
 # In sim loop: streamer.update(renderer.render())
 ```
@@ -42,7 +42,7 @@ Implementation details:
 - FPS counter + connection status dot in the HTML overlay
 - Suppress HTTP access logging for clean terminal
 - Bind `0.0.0.0` for VS Code port detection
-- **Per-user ports:** default `port=8080`, but host runbook assigns 8081-8085 per user to avoid collision on shared machine
+- **Per-user ports:** default `port=18080`, but host runbook assigns 18081-18085 per user to avoid collision on shared machine
 - `.stop()` method: sets `_running=False`, wakes all waiters, calls `server.shutdown()`
 - Docstring warns: render on sim thread only (OpenGL context is not thread-safe)
 
@@ -118,7 +118,7 @@ Validation results (dry run, no video):
 
 **`docs/host-preparation-runbook.md`** — updated:
 - Copy `mujoco_streamer.py` to workspaces
-- Per-user ports (8081-8085)
+- Per-user ports (18081-18085)
 - Pre-flight test with live streaming
 
 ---
@@ -134,7 +134,7 @@ Validation results (dry run, no video):
 | Joint6 home | 1.8 rad (mid-range) | Asymmetric range [-0.0175, 3.7525] |
 | Visualization | MJPEG stream via Pillow + http.server | Zero new deps; VS Code auto-forwards |
 | JPEG encoding | Pillow (not opencv) | Already installed via mediapy |
-| Port allocation | 8081-8085 per user | Avoid collision on shared machine |
+| Port allocation | 18081-18085 per user | Avoid collision on shared machine |
 | Sprint 3 content | Progressive disturbances | Restores difficulty curve; gains matter under perturbation |
 | CLAUDE.md hints | Physics-only (not full answer) | Claude converges in 3-5 iterations |
 | Fallback | All scripts: --no-stream → .mp4 via mediapy | Insurance if streaming breaks |

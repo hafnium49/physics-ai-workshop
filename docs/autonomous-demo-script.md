@@ -16,7 +16,7 @@ Total time: 3-5 minutes.
    ```
    claude
    ```
-3. Open your browser and have it ready for `http://localhost:8080` (or use `$STREAM_PORT` if set)
+3. Open your browser and have it ready for `http://localhost:18080` (or use `$STREAM_PORT` if set)
 
 ---
 
@@ -24,7 +24,7 @@ Total time: 3-5 minutes.
 
 Paste into Claude:
 
-> Load panda_ball_balance.xml. Set the arm to the home pose, place the ball on the plate, and start a live stream on port 8080 using mujoco_streamer.py. Run the simulation in an infinite loop so I can watch the ball fall off naturally.
+> Load panda_ball_balance.xml. Set the arm to the home pose, place the ball on the plate, and start a live stream on port 18080 using mujoco_streamer.py. Run the simulation in an infinite loop so I can watch the ball fall off naturally.
 
 **What happens:** Claude writes a script, runs it. The stream starts. The ball rolls off the plate in about 1 second.
 

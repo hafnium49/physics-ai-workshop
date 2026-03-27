@@ -32,8 +32,8 @@ except ImportError:
 parser = argparse.ArgumentParser(description="Validate panda + ball-on-plate assembly")
 parser.add_argument("--no-stream", action="store_true",
                     help="Disable live streaming; save .mp4 instead")
-parser.add_argument("--port", type=int, default=8080,
-                    help="MJPEG streaming port (default: 8080)")
+parser.add_argument("--port", type=int, default=18080,
+                    help="MJPEG streaming port (default: 18080)")
 parser.add_argument("--duration", type=float, default=3.0,
                     help="Video duration in seconds for .mp4 mode (default: 3.0)")
 args = parser.parse_args()

@@ -6,7 +6,7 @@ Prints Survival Time to terminal. Deliberately mediocre gains for workshop demo.
 Default: live MJPEG streaming with auto-reset on ball drop.
 Fallback: --no-stream saves a single 10s attempt as .mp4.
 
-Run with: python scripts/02_pid_baseline.py [--no-stream] [--port 8080] [--kp 50] [--kd 10]
+Run with: python scripts/02_pid_baseline.py [--no-stream] [--port 18080] [--kp 50] [--kd 10]
 """
 import os
 import sys
@@ -49,8 +49,8 @@ class PIDController:
 parser = argparse.ArgumentParser(description="PID baseline for ball-on-plate balancing")
 parser.add_argument("--no-stream", action="store_true",
                     help="Disable live streaming; save .mp4 instead")
-parser.add_argument("--port", type=int, default=8080,
-                    help="Streaming port (default: 8080)")
+parser.add_argument("--port", type=int, default=18080,
+                    help="Streaming port (default: 18080)")
 parser.add_argument("--kp", type=float, default=50.0,
                     help="Proportional gain (default: 50.0)")
 parser.add_argument("--kd", type=float, default=10.0,

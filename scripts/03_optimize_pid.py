@@ -34,8 +34,8 @@ parser.add_argument("--no-stream", action="store_true",
                     help="Disable live streaming; save .mp4 instead")
 parser.add_argument("--no-render", action="store_true",
                     help="Skip all rendering (dry run, no video output)")
-parser.add_argument("--port", type=int, default=8080,
-                    help="MJPEG streaming port (default: 8080)")
+parser.add_argument("--port", type=int, default=18080,
+                    help="MJPEG streaming port (default: 18080)")
 args = parser.parse_args()
 
 # ---------------------------------------------------------------------------

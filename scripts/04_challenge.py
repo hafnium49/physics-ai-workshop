@@ -59,8 +59,8 @@ parser.add_argument("--force", type=float, default=1.0,
                     help="Impulse force magnitude for Level 2 (default: 1.0N)")
 parser.add_argument("--freq", type=float, default=0.5,
                     help="Oscillation frequency for Level 3/4 (default: 0.5 Hz)")
-parser.add_argument("--port", type=int, default=8080,
-                    help="Streaming port (default: 8080)")
+parser.add_argument("--port", type=int, default=18080,
+                    help="Streaming port (default: 18080)")
 parser.add_argument("--no-stream", action="store_true",
                     help="Disable live streaming; save .mp4 instead")
 args = parser.parse_args()

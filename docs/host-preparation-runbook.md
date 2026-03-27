@@ -59,7 +59,7 @@ for i in {1..5}; do
     sudo cp /path/to/physics-ai-workshop/mujoco_streamer.py /home/engineer$i/physics_sim/
 
     # 7. Set per-user streaming port to avoid collisions
-    echo "export STREAM_PORT=808$i" | sudo tee -a /home/engineer$i/.bashrc > /dev/null
+    echo "export STREAM_PORT=1808$i" | sudo tee -a /home/engineer$i/.bashrc > /dev/null
     echo "export MUJOCO_GL=egl" | sudo tee -a /home/engineer$i/.bashrc > /dev/null
 
     # 8. Copy CLAUDE.md and Claude Code settings into workspace
@@ -133,7 +133,7 @@ All 9 checks should print `[PASS]`. If any fail, fix the issue before proceeding
 2. Enter the workshop password.
 3. Open a new terminal in VS Code (`Ctrl + ~`).
 4. Verify the prompt shows `(workshop_env) engineer1@<hostname>`.
-5. Run: `claude -p "Load panda_ball_balance.xml and start a live stream on port 8081 using mujoco_streamer.py"`
+5. Run: `claude -p "Load panda_ball_balance.xml and start a live stream on port 18081 using mujoco_streamer.py"`
 6. Verify VS Code shows the port forwarding notification — click it and confirm you can see the live video in your browser.
 7. If Claude responds without asking for a login and the stream is visible, **your environments are perfectly provisioned.**
 
@@ -151,7 +151,7 @@ These are pre-built reference scripts that prove the pipeline works. **Participa
 | `03_optimize_pid.py` | Sprint 2: PID Discovery | Grid search proving correct joints exist (host validation) | `python scripts/03_optimize_pid.py --no-render` |
 | `04_challenge.py` | Sprint 3: Challenges | Progressive disturbances: impulses, oscillation, speed record | `python scripts/04_challenge.py --level 2 --kp 50 --kd 10` |
 
-> All scripts support `--no-stream` (saves .mp4 fallback) and `--port` (default 8080).
+> All scripts support `--no-stream` (saves .mp4 fallback) and `--port` (default 18080).
 
 ### "Break glass" fallback
 

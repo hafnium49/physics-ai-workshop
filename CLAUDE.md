@@ -47,13 +47,15 @@ Use the `mujoco_streamer.py` helper for real-time browser-based viewing:
 ```python
 from mujoco_streamer import LiveStreamer
 
-streamer = LiveStreamer(port=8080)
+streamer = LiveStreamer()
 streamer.start()
 
 # In simulation loop:
 renderer.update_scene(data, camera="side")
 streamer.update(renderer.render())
 ```
+
+Each participant has a unique streaming port assigned via the `STREAM_PORT` environment variable. `LiveStreamer()` reads this automatically — do not hardcode a port number.
 
 VS Code automatically detects the port and offers "Open in Browser".
 Fall back to `mediapy.write_video()` only if streaming is unavailable.
@@ -110,7 +112,7 @@ data = mujoco.MjData(model)
 renderer = mujoco.Renderer(model, height=480, width=640)
 
 # Live streaming setup
-streamer = LiveStreamer(port=8080)
+streamer = LiveStreamer()
 streamer.start()
 
 for _ in range(duration_steps):

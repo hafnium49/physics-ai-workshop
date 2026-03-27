@@ -73,9 +73,9 @@ mujoco.mj_forward(model, data)
 # For now, use the rotation matrix from the plate's world orientation.
 plate_xmat = data.xmat[plate_id].reshape(3, 3)
 
-# --- PID controllers for two axes ---
-pid_a = PIDController(KP, KI, KD, dt)
-pid_b = PIDController(KP, KI, KD, dt)
+# --- PID controllers: joint5 for Y, joint6 for X ---
+pid_x = PIDController(KP, KI, KD, dt)
+pid_y = PIDController(KP, KI, KD, dt)
 
 # --- Simulation ---
 renderer = mujoco.Renderer(model, height=480, width=640)
@@ -96,24 +96,25 @@ for step in range(steps):
     mujoco.mj_step(model, data)
 
     # Hold non-PID joints at home
-    for i in range(5):  # joint1-5
+    for i in [0, 1, 2, 3]:  # joint1-4
         data.ctrl[i] = home[i]
-    data.ctrl[7] = 0.04  # gripper
+    data.ctrl[6] = home[6]  # joint7 (no authority, hold)
+    data.ctrl[7] = 0.04     # gripper
 
     # Sense: ball position relative to plate in world frame
     ball_rel_world = data.xpos[ball_id] - data.xpos[plate_id]
 
-    # Transform to plate-local frame
-    plate_xmat = data.xmat[plate_id].reshape(3, 3)
-    ball_rel_local = plate_xmat.T @ ball_rel_world
+    # PID on world-frame X and Y errors
+    # joint6 +angle -> plate moves +X, joint5 +angle -> plate moves +Y
+    error_x = ball_rel_world[0]
+    error_y = ball_rel_world[1]
 
-    # PID on local X and Y errors
-    correction_a = pid_a.compute(ball_rel_local[0])
-    correction_b = pid_b.compute(ball_rel_local[1])
+    correction_x = pid_x.compute(error_x)
+    correction_y = pid_y.compute(error_y)
 
-    # Apply corrections to joint6 and joint7
-    data.ctrl[5] = home[5] - correction_a  # joint6
-    data.ctrl[6] = home[6] - correction_b  # joint7
+    # Apply corrections: joint5 (ctrl[4]) for Y, joint6 (ctrl[5]) for X
+    data.ctrl[4] = home[4] - correction_y  # joint5 controls plate Y
+    data.ctrl[5] = home[5] - correction_x  # joint6 controls plate X
 
     # NaN check
     if np.any(np.isnan(data.xpos[ball_id])):

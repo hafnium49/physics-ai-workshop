@@ -88,38 +88,38 @@ Each level visually distinct on the live stream. Terminal prints current level, 
 
 ---
 
-## Step 6: Run optimization validation
+## Step 6: Run optimization validation — DONE
 
-**File:** `scripts/03_optimize_pid.py` (update existing)
+**File:** `scripts/03_optimize_pid.py` (updated, validated)
 
-Quick validation — already confirmed empirically but needs formal run:
-- Test joint pairings × signs → confirm j5+j6 sign=+1 is unique solution
-- Test disturbance survival across gain ranges → identify which gains matter for Level 2+
-- Print summary table
+**Critical bug found and fixed:** Axis mapping was swapped — `(jx=4, jy=5)` mapped joint5→X, joint6→Y which is backwards. Correct mapping: `(jx=5, jy=4)` = joint6(ctrl[5])→X, joint5(ctrl[4])→Y.
+
+Validation results (dry run, no video):
+- Phase 1: `j6(X)+j5(Y) sign=+1` → 5.0s (WORKS). Swapped axes and wrong signs fail.
+- Phase 1: `j6(X)+j7(Y) sign=+1` → 5.0s (also works — j7 has no Y authority but Y drift is minimal)
+- Phase 2: ALL 20 Kp/Kd combos with correct pairing hit 10.0s
 
 ---
 
-## Step 7: Update workshop materials — HIGHEST PRIORITY after streamer
+## Step 7: Update workshop materials — DONE
 
-**`CLAUDE.md`** is dangerously stale and will mislead Claude. Must fix:
-- Remove ".mp4 only" constraint → document `mujoco_streamer.py` usage
-- Remove disproven 45-degree rotation reference
-- Add `panda_ball_balance.xml` documentation
-- **Physics-only hint (not full answer):** "The plate is rigidly attached to the end-effector. To tilt the plate, identify which joints produce wrist rotation. Not all joints contribute equally to plate orientation."
-- Add Survival Time metric documentation
-- Document `MUJOCO_GL=egl` requirement
+**`CLAUDE.md`** — updated:
+- Streaming as primary output, .mp4 as fallback
+- `panda_ball_balance.xml` documented
+- Physics-only hint (no answer reveal)
+- `MUJOCO_GL=egl` requirement
+- Ball repositioning code reference
 
-**`docs/participant-guide.md`** — revised sprint structure:
-- Sprint 1 (12 min): Assembly + joint exploration (build intuition)
-- Sprint 2 (18 min): PID discovery — human-AI collaboration to find correct joints/sign
-- Sprint 3 (25 min): Progressive challenges (impulses → trajectories → speed record)
-- Buffer (5 min): wrap-up, questions
+**`docs/participant-guide.md`** — updated:
+- Sprint 1: load pre-built model + joint exploration
+- Sprint 2: PID discovery (human-AI collaboration)
+- Sprint 3: progressive disturbance challenges
+- Tips and troubleshooting updated for live streaming
 
-**`docs/host-preparation-runbook.md`**:
-- No opencv-python needed (using Pillow via mediapy)
-- Copy `mujoco_streamer.py` to each `~/physics_sim/`
-- Assign ports 8081-8085 per user
-- Add smoke test: run streamer, verify VS Code port forwarding
+**`docs/host-preparation-runbook.md`** — updated:
+- Copy `mujoco_streamer.py` to workspaces
+- Per-user ports (8081-8085)
+- Pre-flight test with live streaming
 
 ---
 
@@ -141,15 +141,15 @@ Quick validation — already confirmed empirically but needs formal run:
 
 ---
 
-## Execution priority
+## Execution progress
 
-1. **Create `mujoco_streamer.py`** — all script updates depend on it
-2. **Update `CLAUDE.md`** — stale file will actively mislead Claude
-3. **Update scripts 01, 02 with streaming + fallback**
-4. **Create `scripts/04_challenge.py`** — Sprint 3 content
-5. **Run `scripts/03_optimize_pid.py`** — formal validation
-6. **Update participant-guide.md and host-runbook.md**
-7. **End-to-end smoke test** as mock participant
+1. ~~Create `mujoco_streamer.py`~~ DONE
+2. ~~Update `CLAUDE.md`~~ DONE
+3. ~~Update scripts 01, 02 with streaming + fallback~~ DONE (+ `send_frame` → `update` API fix)
+4. ~~Create `scripts/04_challenge.py`~~ DONE
+5. ~~Run `scripts/03_optimize_pid.py`~~ DONE (axis mapping bug fixed)
+6. ~~Update participant-guide.md and host-runbook.md~~ DONE
+7. **End-to-end smoke test** — REMAINING
 
 ---
 

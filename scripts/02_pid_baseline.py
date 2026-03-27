@@ -66,8 +66,10 @@ data.qpos[ball_qpos_addr + 3:ball_qpos_addr + 7] = [1, 0, 0, 0]
 data.qvel[ball_qvel_addr:ball_qvel_addr + 6] = 0
 mujoco.mj_forward(model, data)
 
-# --- PID controllers: joint5 for Y, joint6 for X ---
-# Empirically verified: joint6 +angle -> plate +X, joint5 +angle -> plate +Y
+# --- PID controllers for two tilt axes ---
+# NOTE: This baseline uses joint6+joint7. Joint7 has very low plate-tilt
+# authority. The "Autonomous Scientist" task is for Claude to discover that
+# joint5+joint6 is the correct pairing and the correct sign mapping.
 pid_x = PIDController(KP, KI, KD, dt)
 pid_y = PIDController(KP, KI, KD, dt)
 
@@ -90,25 +92,22 @@ for step in range(steps):
     mujoco.mj_step(model, data)
 
     # Hold non-PID joints at home
-    for i in [0, 1, 2, 3]:  # joint1-4
+    for i in [0, 1, 2, 3, 4]:  # joint1-5
         data.ctrl[i] = home[i]
-    data.ctrl[6] = home[6]  # joint7 (no authority, hold)
-    data.ctrl[7] = 0.04     # gripper
+    data.ctrl[7] = 0.04  # gripper
 
     # Sense: ball position relative to plate in world frame
     ball_rel_world = data.xpos[ball_id] - data.xpos[plate_id]
-
-    # PID on world-frame X and Y errors
-    # joint6 +angle -> plate moves +X, joint5 +angle -> plate moves +Y
     error_x = ball_rel_world[0]
     error_y = ball_rel_world[1]
 
     correction_x = pid_x.compute(error_x)
     correction_y = pid_y.compute(error_y)
 
-    # Apply corrections: joint5 (ctrl[4]) for Y, joint6 (ctrl[5]) for X
-    data.ctrl[4] = home[4] - correction_y  # joint5 controls plate Y
-    data.ctrl[5] = home[5] - correction_x  # joint6 controls plate X
+    # Apply corrections to joint6 (ctrl[5]) and joint7 (ctrl[6])
+    # NOTE: This is the deliberate baseline — joint7 has low authority
+    data.ctrl[5] = home[5] + correction_x  # joint6 for X
+    data.ctrl[6] = home[6] + correction_y  # joint7 for Y (weak!)
 
     # NaN check
     if np.any(np.isnan(data.xpos[ball_id])):
@@ -125,7 +124,7 @@ for step in range(steps):
     t = (step + 1) * dt
     if step % 200 == 0:
         print(f"  t={t:.1f}s  error: x={error_x:+.4f} y={error_y:+.4f}  "
-              f"ctrl5={data.ctrl[4]:.3f} ctrl6={data.ctrl[5]:.3f}")
+              f"ctrl6={data.ctrl[5]:.3f} ctrl7={data.ctrl[6]:.3f}")
 
     # Render
     if step % render_every == 0:

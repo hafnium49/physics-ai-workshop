@@ -45,7 +45,15 @@ You should see the bottom-left of VS Code change to show you're connected remote
    claude
    ```
 
-You're now talking to Claude Code. It can read files, write code, and run simulations for you.
+You're now talking to Claude Code. It already knows about the workshop, the robot model, and the streaming setup — just tell it what you want to do.
+
+> **Your streaming port** is shown on your printed card (e.g., 8081). When Claude asks about ports or you want to specify one, use this number.
+
+---
+
+## What You Just Watched
+
+Before the workshop started, the host ran a live demo where Claude Code discovered — by itself — which joints control the plate. It tried the wrong joints, diagnosed the problem, switched to the right ones, and balanced the ball for 10 seconds. **Now it's your turn.**
 
 ---
 

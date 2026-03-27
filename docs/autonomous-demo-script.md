@@ -16,7 +16,7 @@ Total time: 3-5 minutes.
    ```
    claude
    ```
-3. Open your browser and have it ready for `http://localhost:8080`
+3. Open your browser and have it ready for `http://localhost:8080` (or use `$STREAM_PORT` if set)
 
 ---
 
@@ -83,5 +83,5 @@ Paste:
 ## After the Demo
 
 1. Press Ctrl+C to stop the simulation
-2. Close the Claude Code session: type `/exit`
+2. Close the Claude Code session: type `exit` or press `Ctrl+D`
 3. Tell participants: *"Now it's your turn. Follow the guide on your printed card."*

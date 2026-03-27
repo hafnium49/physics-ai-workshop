@@ -67,14 +67,17 @@ for i in {1..5}; do
     sudo mkdir -p /home/engineer$i/physics_sim/.claude
     sudo cp /path/to/physics-ai-workshop/.claude/settings.json /home/engineer$i/physics_sim/.claude/
 
-    # 9. Initialize git repo (Claude Code resolves settings from git root)
-    sudo -u engineer$i bash -c "cd ~/physics_sim && git init && git add -A && git commit -m 'Workshop setup'"
-
+    # 9. Fix ownership before git init (git init must run as the user)
     sudo chown -R engineer$i:workshop /home/engineer$i/physics_sim/
+
+    # 10. Initialize git repo (Claude Code resolves settings from git root)
+    sudo -u engineer$i bash -c "cd ~/physics_sim && git init && git add -A && git commit -m 'Workshop setup'"
 done
 ```
 
 > **Replace** `<WORKSHOP_PASSWORD>` with the actual password for each user. For better security, generate unique passwords per user (see your SSH setup scripts).
+
+> **Important:** Do NOT copy the `scripts/` directory into participant workspaces. The reference scripts contain spoiler comments (e.g., "DELIBERATE BASELINE BUG") that would short-circuit the discovery process if Claude reads them. Participants build their own scripts from scratch.
 
 ---
 
@@ -162,3 +165,16 @@ If Sprint 2 is completely blocked, copy `04_challenge.py` into the participant's
 sudo cp /path/to/physics-ai-workshop/scripts/04_challenge.py /home/engineer$i/physics_sim/
 sudo chown engineer$i:workshop /home/engineer$i/physics_sim/04_challenge.py
 ```
+
+---
+
+## 7. Workshop Day: Running the Autonomous Demo
+
+Before participants start their own sessions, run the interactive demo to set the stage. Follow the step-by-step guide in `docs/autonomous-demo-script.md`.
+
+**Quick summary:**
+1. Open Claude Code on the host account (or any engineer account)
+2. Show only the browser stream on the projector — not the terminal
+3. Paste 5 prompts in sequence: load model → first PID → diagnose joints → fix → add disturbances
+4. Total time: 3-5 minutes
+5. Then tell participants: *"Now it's your turn."*

@@ -2,106 +2,124 @@
 
 ## Context
 
-Build and validate the full demo pipeline for the Physics-AI workshop. Material engineers (non-programmers) use Claude Code to control a Franka Panda arm balancing a ball on a plate via PID control. The "Autonomous Scientist" concept: Claude writes PID code, runs the sim, reads terminal metrics (Survival Time), and iterates autonomously.
+Build and validate the full demo pipeline for the Physics-AI workshop. Material engineers (non-programmers) use Claude Code to control a Franka Panda arm balancing a ball on a plate via PID control.
 
-Three independent reviews confirmed: the physics is feasible, but the primary risk is model assembly (collision flags, attachment method, joint ranges), not PID tuning.
+**Key pivot:** Real-time MJPEG web streaming replaces .mp4 output. VS Code Remote SSH auto-forwards the port — engineers see live simulation in browser. Iteration time drops from ~90s to ~15s.
+
+**Key physics finding:** With position actuators, PID gain tuning is trivially easy once the correct joints (j5+j6) and sign (+) are found. Static balancing alone won't fill 30 minutes. **Solution: progressive disturbance challenges** restore the difficulty curve.
 
 ---
 
 ## Step 1: Create the combined world XML — DONE
 
-**File:** `content/panda_ball_balance.xml` (created, verified)
+**File:** `content/panda_ball_balance.xml` (created, verified: 14 bodies, 10 joints, 8 actuators)
 
-**Approach: Rigid kinematic attachment** (NOT weld constraint). Copied `panda.xml` content inline with plate body nested directly inside `<body name="hand">`. Avoids soft-constraint wobble.
+- Plate rigidly nested inside `<body name="hand">`, ball as top-level free body
+- Scripts reposition ball onto plate after `mj_forward`
+- Without PID: ball off in ~1.3s. With correct PID: any Kp/Kd hits 10s.
+
+---
+
+## Step 2: Create the MJPEG live streamer helper
+
+**File:** `mujoco_streamer.py`
+
+3-line API for Claude:
+```python
+from mujoco_streamer import LiveStreamer
+streamer = LiveStreamer(port=8080)
+streamer.start()
+# In sim loop: streamer.update(renderer.render())
+```
 
 Implementation details:
-- `meshdir` updated to `franka_panda/assets` (file lives in `content/`, not `content/franka_panda/`)
-- Scene setup copied from `scene.xml` (ground, lighting, skybox, `timestep=0.005`, `implicitfast`)
-- Plate body as child of `hand`, at `pos="0.005 0.003 0.1"` (small XY offset = natural tilt)
-- Plate has `plate_center` site at `pos="0 0 0.005"` for tracking
-- Explicit friction on plate and ball geoms: `friction="1 0.005 0.0001"`
-- `contype="1" conaffinity="1"` on both plate and ball geoms (Panda meshes default to `contype="0"`)
-- Fixed camera: `<camera name="side" pos="1.2 -0.8 0.8" xyaxes="0.6 0.8 0 -0.3 0.2 0.9"/>`
+- **Pillow for JPEG encoding** (NOT opencv-python) — already a transitive dep of mediapy, zero new installs
+- `http.server` + `socketserver.ThreadingMixIn` — simplest correct approach
+- **Single-slot frame buffer** with `threading.Condition` — constant memory, latest frame only
+- `Condition.wait(timeout=1.0)` in handlers for clean Ctrl+C shutdown
+- `daemon_threads = True` on server
+- HTML page at `/` with auto-reconnect JS (handles backgrounded tabs)
+- FPS counter + connection status dot in the HTML overlay
+- Suppress HTTP access logging for clean terminal
+- Bind `0.0.0.0` for VS Code port detection
+- **Per-user ports:** default `port=8080`, but host runbook assigns 8081-8085 per user to avoid collision on shared machine
+- `.stop()` method: sets `_running=False`, wakes all waiters, calls `server.shutdown()`
+- Docstring warns: render on sim thread only (OpenGL context is not thread-safe)
 
-**MuJoCo constraint discovered:** Free joints can ONLY exist on top-level worldbody bodies. The ball cannot be nested inside the plate body. Instead, the ball is a separate top-level body at a default position (`pos="0.3 0 0.6"`). **Scripts must programmatically reposition the ball onto the plate** after setting the arm's home pose and calling `mj_forward`.
-
-**Verified:** Model loads successfully — 14 bodies, 10 joints (7 arm + 2 finger + 1 ball free), 8 actuators.
-
-**Joint6 range issue:** Range is `[-0.0175, 3.7525]` — nearly zero room in the negative direction. Set home position for joint6 to ~1.8 rad (mid-range) instead of π/2.
-
----
-
-## Step 2: Validate assembly (Sprint 1 demo)
-
-**File:** `scripts/01_validate_assembly.py`
-
-- Load `content/panda_ball_balance.xml`
-- Set initial arm home pose: `j1=0, j2=-0.785, j3=0, j4=-2.356, j5=0, j6=1.8, j7=0.785`
-  - Note: j6=1.8 (mid-range), not π/2, to address asymmetric joint range
-- Hold arm via position actuators (`data.ctrl[0:7]` = target joint angles)
-- **Reposition ball onto plate:** After setting arm pose and calling `mj_forward`, read `data.xpos[plate_id]`, then set ball's qpos to plate position + (0, 0, 0.025) and zero out ball velocity. This is needed because the ball is a top-level free body (MuJoCo constraint).
-- Run 3 seconds, render at 30fps using the fixed `side` camera → `assembly_test.mp4`
-- Print diagnostics: plate/ball positions, whether ball is on plate, check for NaN
-- **Validation criteria:**
-  - No plate jitter or vibration (rigid attachment should eliminate this)
-  - Ball visible on plate at start
-  - Ball stays on plate at least briefly (confirms collision is working — ball doesn't fall through)
-  - No NaN in body positions
+**All scripts get `--no-stream` fallback:** try/except import, falls back to mediapy .mp4 output.
 
 ---
 
-## Step 3: Baseline PID controller (Sprint 2 demo)
+## Step 3: Update assembly script with live stream (Sprint 1)
 
-**File:** `scripts/02_pid_baseline.py`
+**File:** `scripts/01_validate_assembly.py` (update existing)
 
-PID architecture:
-- **Sense:** Ball XY position relative to plate center (`data.xpos[ball_id] - data.xpos[plate_id]`)
-- **Transform:** Rotate error vector by ~45 degrees to account for the hand's `quat="0.9238795 0 0 -0.3826834"` rotation. Without this, X/Y errors map to diagonal joint corrections.
-- **Control:** Rotated X-error → joint6 correction, rotated Y-error → joint7 correction
-- **Actuate:** `data.ctrl[5] = nominal_j6 + pid_x.compute(rotated_error_x)`, same for ctrl[6]/joint7
-- All other joints held at home position
-
-Failure detection:
-```
-ball off plate when: |ball_rel_x| > 0.14 or |ball_rel_y| > 0.14 or ball_rel_z < -0.02
-```
-
-Print `Survival Time: X.X seconds` to terminal — this is the metric Claude reads.
-
-Start with deliberately mediocre gains: `Kp=50, Kd=10, Ki=0` → expect 1-3 second survival.
-
-Also print per-step diagnostics: `Ball X error = +0.05, joint6 correction = +0.02` (for debugging axis mapping).
-
-Add NaN guard and max-time cap (10 seconds).
-
-Save video as `attempt_1.mp4`.
+- Stream live via `LiveStreamer` (with .mp4 fallback)
+- `while True` loop with Ctrl+C to stop
+- Print diagnostics every second
+- **New: joint exploration mode** — accept keyboard/terminal commands to nudge individual joints, so participants build intuition for which joints control what
 
 ---
 
-## Step 4: Validate optimization (Sprint 3 proof)
+## Step 4: Update baseline PID script (Sprint 2)
 
-**File:** `scripts/03_optimize_pid.py`
+**File:** `scripts/02_pid_baseline.py` (update existing)
 
-Purpose: Prove that a 10-second solution EXISTS in the physics, via grid search. (During the actual workshop, Claude iterates interactively, not via grid search.)
-
-- `run_trial(kp, kd, ki=0) → survival_time` function (no video rendering in search loop)
-- Grid search: Kp in [20, 50, 100, 200, 500], Kd in [2, 5, 10, 20, 50]
-- Print each result: `Kp=100, Kd=20 -> Survival Time: 7.3s`
-- NaN guard per trial (skip divergent trials, don't crash the search)
-- Render final video only for best params → `best_balance.mp4`
-- If no combo reaches 10s, also try adding Ki=[0, 1, 5] for steady-state offset correction
+- Add `LiveStreamer` integration
+- `while True` loop with auto-reset on ball fall (reposition ball, restart timer)
+- Keep `Survival Time: X.X seconds` terminal output (Claude reads this)
+- **Add per-joint authority diagnostics** on each reset: "joint7 correction = 0.05 rad → plate tilt change = 0.001 rad" — gives Claude data to reason from, prevents gain-tuning dead-end spiral
+- Deliberate baseline: wrong joints (j6+j7) + wrong sign → 0.8s survival
 
 ---
 
-## Step 5: Update workshop materials
+## Step 5: Create disturbance challenge script (Sprint 3 content)
 
-- **`CLAUDE.md`**: Add `panda_ball_balance.xml` documentation, Survival Time metric, axis rotation note, joint6 mid-range home position
-- **`docs/participant-guide.md`**: Revise Sprint 3 structure:
-  - Phase A (10 min): "Autonomous Scientist" demo — Claude runs 3-4 iterations autonomously
-  - Phase B (15 min): Human-AI collaboration — engineer directs Claude based on physical intuition ("the ball rolls left, increase stiffness")
-  - Phase C (5 min): Victory lap — before/after comparison video
-- Add prompt templates for each sprint phase
-- Add "break glass" fallback note: if Sprint 2 isn't working by 25-min mark, provide pre-built baseline script
+**File:** `scripts/04_challenge.py` (NEW)
+
+Progressive difficulty that restores the tuning arc:
+
+1. **Level 1 — Static hold** (trivial with correct joints): ball stays for 10s. Confirms working PID.
+2. **Level 2 — Periodic impulses**: random force pushes on ball every 2s. Gains matter now. Target: survive 10s.
+3. **Level 3 — Moving target**: plate tilts in slow sinusoidal circle while keeping ball centered. Target: survive at increasing speeds.
+4. **Level 4 — Speed record**: fastest circle speed where ball survives 10s. Competitive target for leaderboard.
+
+Each level visually distinct on the live stream. Terminal prints current level, survival time, max perturbation survived.
+
+---
+
+## Step 6: Run optimization validation
+
+**File:** `scripts/03_optimize_pid.py` (update existing)
+
+Quick validation — already confirmed empirically but needs formal run:
+- Test joint pairings × signs → confirm j5+j6 sign=+1 is unique solution
+- Test disturbance survival across gain ranges → identify which gains matter for Level 2+
+- Print summary table
+
+---
+
+## Step 7: Update workshop materials — HIGHEST PRIORITY after streamer
+
+**`CLAUDE.md`** is dangerously stale and will mislead Claude. Must fix:
+- Remove ".mp4 only" constraint → document `mujoco_streamer.py` usage
+- Remove disproven 45-degree rotation reference
+- Add `panda_ball_balance.xml` documentation
+- **Physics-only hint (not full answer):** "The plate is rigidly attached to the end-effector. To tilt the plate, identify which joints produce wrist rotation. Not all joints contribute equally to plate orientation."
+- Add Survival Time metric documentation
+- Document `MUJOCO_GL=egl` requirement
+
+**`docs/participant-guide.md`** — revised sprint structure:
+- Sprint 1 (12 min): Assembly + joint exploration (build intuition)
+- Sprint 2 (18 min): PID discovery — human-AI collaboration to find correct joints/sign
+- Sprint 3 (25 min): Progressive challenges (impulses → trajectories → speed record)
+- Buffer (5 min): wrap-up, questions
+
+**`docs/host-preparation-runbook.md`**:
+- No opencv-python needed (using Pillow via mediapy)
+- Copy `mujoco_streamer.py` to each `~/physics_sim/`
+- Assign ports 8081-8085 per user
+- Add smoke test: run streamer, verify VS Code port forwarding
 
 ---
 
@@ -109,19 +127,38 @@ Purpose: Prove that a 10-second solution EXISTS in the physics, via grid search.
 
 | Decision | Choice | Reason |
 |----------|--------|--------|
-| Plate attachment | Rigid kinematic (child of `hand`) | Eliminates weld wobble; PID can trust plate angle |
-| PID joints | joint6 + joint7 | Wrist pitch/roll, closest to end-effector |
-| Joint6 home | 1.8 rad (mid-range) | Asymmetric range [-0.0175, 3.7525] needs centered nominal |
-| Error rotation | ~45 deg rotation of XY error | Hand has 45-deg Z rotation; naive mapping gives diagonal control |
-| Ball initial state | Top-level free body, repositioned in script | MuJoCo requires free joints on top-level bodies; scripts place ball on plate after `mj_forward` |
-| Collision flags | contype=1, conaffinity=1 on plate/ball | Panda defaults to contype=0; ball would fall through |
+| Plate attachment | Rigid kinematic (child of `hand`) | DONE; eliminates weld wobble |
+| Ball placement | Top-level free body, repositioned in script | MuJoCo free joint constraint |
+| PID joints | joint5 (Y) + joint6 (X) | Empirically verified; j7 ≈ zero authority |
+| PID sign | Positive (+) | Empirically verified |
+| Joint6 home | 1.8 rad (mid-range) | Asymmetric range [-0.0175, 3.7525] |
+| Visualization | MJPEG stream via Pillow + http.server | Zero new deps; VS Code auto-forwards |
+| JPEG encoding | Pillow (not opencv) | Already installed via mediapy |
+| Port allocation | 8081-8085 per user | Avoid collision on shared machine |
+| Sprint 3 content | Progressive disturbances | Restores difficulty curve; gains matter under perturbation |
+| CLAUDE.md hints | Physics-only (not full answer) | Claude converges in 3-5 iterations |
+| Fallback | All scripts: --no-stream → .mp4 via mediapy | Insurance if streaming breaks |
+
+---
+
+## Execution priority
+
+1. **Create `mujoco_streamer.py`** — all script updates depend on it
+2. **Update `CLAUDE.md`** — stale file will actively mislead Claude
+3. **Update scripts 01, 02 with streaming + fallback**
+4. **Create `scripts/04_challenge.py`** — Sprint 3 content
+5. **Run `scripts/03_optimize_pid.py`** — formal validation
+6. **Update participant-guide.md and host-runbook.md**
+7. **End-to-end smoke test** as mock participant
 
 ---
 
 ## Verification
 
-1. `python scripts/01_validate_assembly.py` → `assembly_test.mp4`: plate attached, ball visible, no jitter, no NaN
-2. `python scripts/02_pid_baseline.py` → `attempt_1.mp4` + prints `Survival Time: ~1-3s`
-3. `python scripts/03_optimize_pid.py` → finds gains achieving 10s, renders `best_balance.mp4`
-4. All scripts headless, output .mp4 via mediapy only
-5. Empirically verify axis mapping: positive X error → correct joint correction direction
+1. `mujoco_streamer.py` — stream starts, browser shows frames, Ctrl+C stops cleanly
+2. `scripts/01_validate_assembly.py` → live stream, ball on plate, joint exploration works
+3. `scripts/02_pid_baseline.py` → ball falls off at 0.8s, authority diagnostics print, auto-resets
+4. `scripts/04_challenge.py` → Level 1 trivial, Level 2 requires tuning, Level 3+ is hard
+5. `--no-stream` fallback produces .mp4 on all scripts
+6. Port forwarding works from VS Code Remote SSH client
+7. Fresh Claude conversation with updated CLAUDE.md converges on correct joints in ≤5 iterations

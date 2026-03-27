@@ -160,7 +160,8 @@ Validation results (dry run, no video):
 Bugs found and fixed during implementation:
 - `LiveStreamer(renderer, port=...)` in scripts 02 and 04 passed extra `renderer` arg — removed
 - `_reset_scene` and joint authority check used raw qpos indices instead of `jnt_qposadr` — fixed (free joint shifts qpos layout)
-- Streamer import failed from `scripts/` — added project root to `sys.path`
+- Streamer import failed from `scripts/` — added project root to `sys.path` in preflight.py
+- Same `sys.path` fix applied to all 4 scripts (01, 02, 03, 04) — streamer now imports correctly from any working directory
 
 Results:
 ```
@@ -183,5 +184,5 @@ Confirmed: CLAUDE.md does NOT reveal correct joint pairing or sign (physics-only
 ## Verification
 
 1. ~~`scripts/preflight.py`~~ ALL 9 CHECKS PASSED
-2. Manual: start `01_validate_assembly.py` in stream mode, verify browser shows live video via VS Code port forwarding
+2. ~~`01_validate_assembly.py` in stream mode~~ Streamer starts, prints "MuJoCo streamer running" (no .mp4 fallback)
 3. Manual: fresh Claude Code session with updated CLAUDE.md converges on correct joints in ≤5 iterations

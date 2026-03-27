@@ -1,0 +1,19 @@
+<mujoco model="ball_and_plate">
+  <!--
+    Minimal ball-and-plate model for the Physics-AI Workshop.
+    This defines a flat plate and a ball that sits on top of it.
+    Attach the plate body to a robot's end-effector to create
+    a balancing task.
+  -->
+  <worldbody>
+    <body name="plate" pos="0 0 0.5">
+      <geom name="plate_geom" type="box" size="0.15 0.15 0.005"
+            rgba="0.8 0.8 0.8 1" mass="0.5"/>
+      <body name="ball" pos="0 0 0.025">
+        <joint name="ball_free" type="free"/>
+        <geom name="ball_geom" type="sphere" size="0.02"
+              rgba="1 0.2 0.2 1" mass="0.1"/>
+      </body>
+    </body>
+  </worldbody>
+</mujoco>

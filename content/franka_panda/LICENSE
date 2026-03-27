@@ -1,0 +1,8 @@
+The Franka Emika Panda model files in this directory are from the
+MuJoCo Menagerie project by Google DeepMind.
+
+Source: https://github.com/google-deepmind/mujoco_menagerie
+License: Apache License 2.0
+Copyright: Google DeepMind
+
+See the full license at: https://www.apache.org/licenses/LICENSE-2.0

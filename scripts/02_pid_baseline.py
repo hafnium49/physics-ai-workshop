@@ -66,14 +66,8 @@ data.qpos[ball_qpos_addr + 3:ball_qpos_addr + 7] = [1, 0, 0, 0]
 data.qvel[ball_qvel_addr:ball_qvel_addr + 6] = 0
 mujoco.mj_forward(model, data)
 
-# --- Hand rotation compensation ---
-# The hand body has quat="0.9238795 0 0 -0.3826834" which is a -45 degree
-# rotation around the X axis. We need to figure out the mapping between
-# world-frame ball XY error and joint6/joint7 corrections empirically.
-# For now, use the rotation matrix from the plate's world orientation.
-plate_xmat = data.xmat[plate_id].reshape(3, 3)
-
 # --- PID controllers: joint5 for Y, joint6 for X ---
+# Empirically verified: joint6 +angle -> plate +X, joint5 +angle -> plate +Y
 pid_x = PIDController(KP, KI, KD, dt)
 pid_y = PIDController(KP, KI, KD, dt)
 

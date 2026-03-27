@@ -8,23 +8,26 @@ Three independent reviews confirmed: the physics is feasible, but the primary ri
 
 ---
 
-## Step 1: Create the combined world XML
+## Step 1: Create the combined world XML — DONE
 
-**File:** `content/panda_ball_balance.xml`
+**File:** `content/panda_ball_balance.xml` (created, verified)
 
-**Primary approach: Rigid kinematic attachment** (NOT weld constraint). Copy `panda.xml` content into a new combined file and nest the plate body directly inside the `<body name="hand">` element. This avoids soft-constraint wobble that would make PID tuning unreliable.
+**Approach: Rigid kinematic attachment** (NOT weld constraint). Copied `panda.xml` content inline with plate body nested directly inside `<body name="hand">`. Avoids soft-constraint wobble.
 
-Key details:
-- Copy scene setup from `scene.xml` (ground, lighting, skybox, `timestep=0.005`, `implicitfast`)
+Implementation details:
+- `meshdir` updated to `franka_panda/assets` (file lives in `content/`, not `content/franka_panda/`)
+- Scene setup copied from `scene.xml` (ground, lighting, skybox, `timestep=0.005`, `implicitfast`)
 - Plate body as child of `hand`, at `pos="0.005 0.003 0.1"` (small XY offset = natural tilt)
-- Ball as child of plate with free joint, at `pos="0 0 0.025"` (resting on surface)
+- Plate has `plate_center` site at `pos="0 0 0.005"` for tracking
 - Explicit friction on plate and ball geoms: `friction="1 0.005 0.0001"`
-- **Critical: plate/ball geoms must have `contype="1" conaffinity="1"`** (Panda collision meshes default to `contype="0"`)
-- Add a fixed camera: `<camera name="side" pos="1.0 -0.5 1.0" lookat="0.3 0 0.6"/>` for consistent video framing
+- `contype="1" conaffinity="1"` on both plate and ball geoms (Panda meshes default to `contype="0"`)
+- Fixed camera: `<camera name="side" pos="1.2 -0.8 0.8" xyaxes="0.6 0.8 0 -0.3 0.2 0.9"/>`
 
-**Joint6 range issue:** Range is `[-0.0175, 3.7525]` — nearly zero room in the negative direction. Set home position for joint6 to ~1.8 rad (mid-range) instead of π/2 to ensure symmetric control authority in both tilt directions.
+**MuJoCo constraint discovered:** Free joints can ONLY exist on top-level worldbody bodies. The ball cannot be nested inside the plate body. Instead, the ball is a separate top-level body at a default position (`pos="0.3 0 0.6"`). **Scripts must programmatically reposition the ball onto the plate** after setting the arm's home pose and calling `mj_forward`.
 
-**Tradeoff:** Copying panda.xml means we don't auto-inherit upstream changes, but for a workshop this is fine. Modularity matters less than physics stability.
+**Verified:** Model loads successfully — 14 bodies, 10 joints (7 arm + 2 finger + 1 ball free), 8 actuators.
+
+**Joint6 range issue:** Range is `[-0.0175, 3.7525]` — nearly zero room in the negative direction. Set home position for joint6 to ~1.8 rad (mid-range) instead of π/2.
 
 ---
 
@@ -36,6 +39,7 @@ Key details:
 - Set initial arm home pose: `j1=0, j2=-0.785, j3=0, j4=-2.356, j5=0, j6=1.8, j7=0.785`
   - Note: j6=1.8 (mid-range), not π/2, to address asymmetric joint range
 - Hold arm via position actuators (`data.ctrl[0:7]` = target joint angles)
+- **Reposition ball onto plate:** After setting arm pose and calling `mj_forward`, read `data.xpos[plate_id]`, then set ball's qpos to plate position + (0, 0, 0.025) and zero out ball velocity. This is needed because the ball is a top-level free body (MuJoCo constraint).
 - Run 3 seconds, render at 30fps using the fixed `side` camera → `assembly_test.mp4`
 - Print diagnostics: plate/ball positions, whether ball is on plate, check for NaN
 - **Validation criteria:**
@@ -109,7 +113,7 @@ Purpose: Prove that a 10-second solution EXISTS in the physics, via grid search.
 | PID joints | joint6 + joint7 | Wrist pitch/roll, closest to end-effector |
 | Joint6 home | 1.8 rad (mid-range) | Asymmetric range [-0.0175, 3.7525] needs centered nominal |
 | Error rotation | ~45 deg rotation of XY error | Hand has 45-deg Z rotation; naive mapping gives diagonal control |
-| Ball initial state | Resting on plate | No drop impulse; isolates rolling dynamics |
+| Ball initial state | Top-level free body, repositioned in script | MuJoCo requires free joints on top-level bodies; scripts place ball on plate after `mj_forward` |
 | Collision flags | contype=1, conaffinity=1 on plate/ball | Panda defaults to contype=0; ball would fall through |
 
 ---

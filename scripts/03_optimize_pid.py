@@ -138,11 +138,14 @@ print("=" * 60)
 print("Phase 1: Testing joint pairings (Kp=50, Kd=10)")
 print("=" * 60)
 
+# Pairings: (name, jx_ctrl_idx, jy_ctrl_idx)
+# jx = actuator index controlling plate X, jy = actuator index controlling plate Y
+# Empirically: joint6 (ctrl[5]) -> plate X, joint5 (ctrl[4]) -> plate Y
 pairings = [
-    ("joint5+joint6", 4, 5),
-    ("joint6+joint7", 5, 6),
-    ("joint4+joint5", 3, 4),
-    ("joint5+joint7", 4, 6),
+    ("j6(X)+j5(Y)", 5, 4),   # correct pairing
+    ("j6(X)+j7(Y)", 5, 6),   # j7 has no Y authority
+    ("j5(X)+j6(Y)", 4, 5),   # axes swapped
+    ("j5(X)+j4(Y)", 4, 3),   # wrong joints entirely
 ]
 
 for name, jx, jy in pairings:
@@ -154,13 +157,13 @@ for name, jx, jy in pairings:
 # --- Phase 2: Confirm with the winning pairing ---
 print()
 print("=" * 60)
-print("Phase 2: Gain search with joint5+joint6, sign=+1")
+print("Phase 2: Gain search with j6(X)+j5(Y), sign=+1")
 print("=" * 60)
 
 results = []
 for kp in [5, 10, 20, 50, 100]:
     for kd in [1, 5, 10, 20]:
-        t = run_trial(4, 5, +1, kp, kd)
+        t = run_trial(5, 4, +1, kp, kd)
         results.append((kp, kd, t))
         marker = " ***" if t >= 10.0 else ""
         print(f"  Kp={kp:>3d} Kd={kd:>2d} -> Survival Time: {t:.1f}s{marker}")
@@ -223,8 +226,9 @@ else:
                 dx = (ex - prev_ex) / dt
                 dy = (ey - prev_ey) / dt
 
-                data.ctrl[5] = home[5] + (best[0] * ey + best[1] * dy)
-                data.ctrl[4] = home[4] + (best[0] * ex + best[1] * dx)
+                # j6(X)+j5(Y) with positive sign
+                data.ctrl[5] = home[5] + (best[0] * ex + best[1] * dx)  # joint6 for X
+                data.ctrl[4] = home[4] + (best[0] * ey + best[1] * dy)  # joint5 for Y
 
                 prev_ex, prev_ey = ex, ey
 

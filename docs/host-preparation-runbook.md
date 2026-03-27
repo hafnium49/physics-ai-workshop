@@ -110,5 +110,6 @@ To guarantee a zero-friction experience for the engineers, perform a single end-
 2. Enter the workshop password.
 3. Open a new terminal in VS Code (`Ctrl + ~`).
 4. Verify the prompt shows `(workshop_env) engineer1@<hostname>`.
-5. Run the command: `claude -p "Say hello to the workshop"`
-6. If Claude responds without asking for a login, **your environments are perfectly provisioned.**
+5. Run the command: `claude -p "Load panda_ball_balance.xml and start a live stream on port 8081 using mujoco_streamer.py"`
+6. Verify VS Code shows the port forwarding notification — click it and confirm you can see the live video in your browser.
+7. If Claude responds without asking for a login and the stream is visible, **your environments are perfectly provisioned.**

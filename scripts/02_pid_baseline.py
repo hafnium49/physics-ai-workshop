@@ -255,7 +255,7 @@ else:
     print(f"PID gains: Kp={KP}, Ki={KI}, Kd={KD}")
     print(f"Press Ctrl+C to stop.\n")
 
-    streamer = LiveStreamer(renderer, port=args.port)
+    streamer = LiveStreamer(port=args.port)
     fps = 30
     render_every = int(1.0 / (fps * dt))
     attempt = 0

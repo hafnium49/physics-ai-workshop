@@ -150,6 +150,7 @@ Validation results (dry run, no video):
 5. ~~Run `scripts/03_optimize_pid.py`~~ DONE (axis mapping bug fixed)
 6. ~~Update participant-guide.md and host-runbook.md~~ DONE
 7. ~~Pre-flight sanity check~~ DONE
+8. ~~Workshop agent system~~ DONE (simplified from 3-review consensus)
 
 ---
 
@@ -186,3 +187,35 @@ Confirmed: CLAUDE.md does NOT reveal correct joint pairing or sign (physics-only
 1. ~~`scripts/preflight.py`~~ ALL 9 CHECKS PASSED
 2. ~~`01_validate_assembly.py` in stream mode~~ Streamer starts, prints "MuJoCo streamer running" (no .mp4 fallback)
 3. Manual: fresh Claude Code session with updated CLAUDE.md converges on correct joints in ≤5 iterations
+
+---
+
+## Step 9: Workshop agent system — DONE
+
+Three reviews (Software Architect, Game Designer, Reality Checker) converged: original plan was over-engineered. Simplified to 3 items:
+
+### Built:
+
+1. **`.claude/settings.json`** — clean permission patterns replacing 43-line ad-hoc allowlist. Covers `python`, `python3`, `MUJOCO_GL=egl python`, `git`, `kill`, `ls`, etc. Participants won't see permission prompts.
+
+2. **CLAUDE.md behavioral nudge** — one line: "When writing a PID controller for the first time, do not run a systematic joint authority analysis upfront." Prevents Claude from being too clever without scripting deliberate failure.
+
+3. **`docs/autonomous-demo-script.md`** — interactive host guide (NOT `claude -p` mega-prompt). 5 prompts the host pastes in sequence: load → first PID → diagnose → fix → challenge. Show only browser stream on projector.
+
+### Critical fixes applied to host runbook:
+- `git init` in participant workspaces (Claude Code resolves settings from git root)
+- Copy `CLAUDE.md` and `.claude/settings.json` to workspaces
+- `MUJOCO_GL=egl` in participant `.bashrc`
+- Do NOT copy reference scripts (spoiler comments visible to Claude)
+
+### Killed (from reviews):
+- Custom slash commands — feature doesn't exist as user-defined files in Claude Code
+- Scripted failure behavior — patronizing; natural failure is more educational
+- Facilitator dashboard — overkill for 5 participants
+- `claude -p` mega-prompt — single-turn can't produce multi-turn discovery narrative
+- Hooks — env vars via `.bashrc` and settings.json are simpler
+
+### Still needs testing:
+- `env` block in settings.json — unknown if it propagates to Bash subprocesses
+- Permission pattern matching — verify `Bash(python:*)` works empirically
+- Full dry run as engineer1 with `git init` workspace

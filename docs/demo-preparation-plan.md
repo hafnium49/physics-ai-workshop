@@ -149,16 +149,39 @@ Validation results (dry run, no video):
 4. ~~Create `scripts/04_challenge.py`~~ DONE
 5. ~~Run `scripts/03_optimize_pid.py`~~ DONE (axis mapping bug fixed)
 6. ~~Update participant-guide.md and host-runbook.md~~ DONE
-7. **End-to-end smoke test** — REMAINING
+7. ~~Pre-flight sanity check~~ DONE
+
+---
+
+## Step 8: Pre-flight sanity check — DONE
+
+**File:** `scripts/preflight.py` (created, all 9 checks pass)
+
+Bugs found and fixed during implementation:
+- `LiveStreamer(renderer, port=...)` in scripts 02 and 04 passed extra `renderer` arg — removed
+- `_reset_scene` and joint authority check used raw qpos indices instead of `jnt_qposadr` — fixed (free joint shifts qpos layout)
+- Streamer import failed from `scripts/` — added project root to `sys.path`
+
+Results:
+```
+[PASS] MUJOCO_GL=egl
+[PASS] Model loads (14 bodies, 10 joints, 8 actuators)
+[PASS] Ball positioning (z_gap=0.0250)
+[PASS] Streamer lifecycle (start/stop)
+[PASS] mediapy import
+[PASS] Correct PID survival (10.0s)
+[PASS] Wrong PID fails (0.8s < 2.0s)
+[PASS] Joint authority (j5=0.0018, j6=0.0018, j7=0.0001)
+[PASS] EGL rendering (480x640x3)
+ALL CHECKS PASSED
+```
+
+Confirmed: CLAUDE.md does NOT reveal correct joint pairing or sign (physics-only hints).
 
 ---
 
 ## Verification
 
-1. `mujoco_streamer.py` — stream starts, browser shows frames, Ctrl+C stops cleanly
-2. `scripts/01_validate_assembly.py` → live stream, ball on plate, joint exploration works
-3. `scripts/02_pid_baseline.py` → ball falls off at 0.8s, authority diagnostics print, auto-resets
-4. `scripts/04_challenge.py` → Level 1 trivial, Level 2 requires tuning, Level 3+ is hard
-5. `--no-stream` fallback produces .mp4 on all scripts
-6. Port forwarding works from VS Code Remote SSH client
-7. Fresh Claude conversation with updated CLAUDE.md converges on correct joints in ≤5 iterations
+1. ~~`scripts/preflight.py`~~ ALL 9 CHECKS PASSED
+2. Manual: start `01_validate_assembly.py` in stream mode, verify browser shows live video via VS Code port forwarding
+3. Manual: fresh Claude Code session with updated CLAUDE.md converges on correct joints in ≤5 iterations

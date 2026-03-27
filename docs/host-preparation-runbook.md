@@ -53,9 +53,14 @@ for i in {1..5}; do
     # 5. Create a clean working directory and copy workshop content
     sudo -u engineer$i bash -c "mkdir -p ~/physics_sim"
 
-    # 6. Copy MuJoCo content (Panda model + ball_and_plate) into workspace
+    # 6. Copy MuJoCo content (Panda model + ball_and_plate) and streamer into workspace
     # Adjust the source path to where you cloned the physics-ai-workshop repo
     sudo cp -r /path/to/physics-ai-workshop/content/* /home/engineer$i/physics_sim/
+    sudo cp /path/to/physics-ai-workshop/mujoco_streamer.py /home/engineer$i/physics_sim/
+
+    # 7. Set per-user streaming port to avoid collisions
+    echo "export STREAM_PORT=808$i" | sudo tee -a /home/engineer$i/.bashrc > /dev/null
+
     sudo chown -R engineer$i:workshop /home/engineer$i/physics_sim/
 done
 ```

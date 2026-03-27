@@ -3,15 +3,42 @@
 Systematically tests joint pairings and PID sign/gain combinations.
 Proves the task is solvable and identifies the correct control architecture.
 
-Run with: MUJOCO_GL=egl python scripts/03_optimize_pid.py
+Default:  python scripts/03_optimize_pid.py               (grid search + render best as stream)
+Fallback: python scripts/03_optimize_pid.py --no-stream   (grid search + render best as .mp4)
+Dry run:  python scripts/03_optimize_pid.py --no-render   (grid search only, no video output)
 """
 import os
 os.environ.setdefault("MUJOCO_GL", "egl")
 
+import argparse
 import mujoco
-import mediapy
 import numpy as np
 
+# ---------------------------------------------------------------------------
+# Optional streamer import
+# ---------------------------------------------------------------------------
+try:
+    from mujoco_streamer import LiveStreamer
+    HAS_STREAMER = True
+except ImportError:
+    HAS_STREAMER = False
+
+# ---------------------------------------------------------------------------
+# CLI
+# ---------------------------------------------------------------------------
+parser = argparse.ArgumentParser(
+    description="PID optimization grid search for ball-on-plate balancing")
+parser.add_argument("--no-stream", action="store_true",
+                    help="Disable live streaming; save .mp4 instead")
+parser.add_argument("--no-render", action="store_true",
+                    help="Skip all rendering (dry run, no video output)")
+parser.add_argument("--port", type=int, default=8080,
+                    help="MJPEG streaming port (default: 8080)")
+args = parser.parse_args()
+
+# ---------------------------------------------------------------------------
+# Load model
+# ---------------------------------------------------------------------------
 model = mujoco.MjModel.from_xml_path("content/panda_ball_balance.xml")
 
 plate_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, "plate")
@@ -141,9 +168,87 @@ for kp in [5, 10, 20, 50, 100]:
 best = max(results, key=lambda x: x[2])
 print(f"\nBest: Kp={best[0]}, Kd={best[1]}, Survival={best[2]:.1f}s")
 
-# --- Phase 3: Render the best result ---
-print()
-print("Rendering best result...")
-t, frames = run_trial(4, 5, +1, best[0], best[1], render=True)
-mediapy.write_video("best_balance.mp4", frames, fps=30)
-print(f"Video saved: best_balance.mp4 ({len(frames)} frames, {t:.1f}s survival)")
+# --- Phase 3: Render the best result (unless --no-render) ---
+if args.no_render:
+    print("\n--no-render specified, skipping video output.")
+else:
+    use_stream = (not args.no_stream) and HAS_STREAMER
+
+    if use_stream:
+        # ---- Live MJPEG streaming of best result ----
+        print(f"\nStreaming best result on port {args.port}...")
+        renderer = mujoco.Renderer(model, height=480, width=640)
+        cam_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_CAMERA, "side")
+        streamer = LiveStreamer(port=args.port)
+        streamer.start()
+
+        # Run the best trial and stream frames
+        data = mujoco.MjData(model)
+        dt = model.opt.timestep
+
+        # Reset scene
+        for jn, val in zip(joint_names, home):
+            jid = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, jn)
+            data.qpos[model.jnt_qposadr[jid]] = val
+        for i, val in enumerate(home):
+            data.ctrl[i] = val
+        data.ctrl[7] = 0.04
+        mujoco.mj_forward(model, data)
+
+        ba = model.jnt_qposadr[ball_joint_id]
+        bv = model.jnt_dofadr[ball_joint_id]
+        data.qpos[ba:ba + 3] = data.xpos[plate_id] + [0, 0, 0.025]
+        data.qpos[ba + 3:ba + 7] = [1, 0, 0, 0]
+        data.qvel[bv:bv + 6] = 0
+        mujoco.mj_forward(model, data)
+
+        fps = 30
+        render_every = int(1.0 / (fps * dt))
+        prev_ex, prev_ey = 0.0, 0.0
+        steps = int(10.0 / dt)
+
+        print(f"Streaming Kp={best[0]}, Kd={best[1]} for 10s...")
+        print("Press Ctrl+C to stop.\n")
+
+        try:
+            for step in range(steps):
+                mujoco.mj_step(model, data)
+
+                for i, val in enumerate(home):
+                    data.ctrl[i] = val
+                data.ctrl[7] = 0.04
+
+                brel = data.xpos[ball_id] - data.xpos[plate_id]
+                ex, ey = brel[0], brel[1]
+                dx = (ex - prev_ex) / dt
+                dy = (ey - prev_ey) / dt
+
+                data.ctrl[5] = home[5] + (best[0] * ey + best[1] * dy)
+                data.ctrl[4] = home[4] + (best[0] * ex + best[1] * dx)
+
+                prev_ex, prev_ey = ex, ey
+
+                if np.any(np.isnan(data.xpos[ball_id])):
+                    break
+                if abs(ex) > 0.14 or abs(ey) > 0.14 or brel[2] < -0.02:
+                    break
+
+                if step % render_every == 0:
+                    renderer.update_scene(data, camera=cam_id)
+                    streamer.update(renderer.render())
+        except KeyboardInterrupt:
+            print("\nStreaming stopped.")
+        finally:
+            streamer.stop()
+
+    else:
+        # ---- .mp4 fallback mode ----
+        import mediapy
+
+        if not args.no_stream and not HAS_STREAMER:
+            print("WARNING: mujoco_streamer not installed, falling back to .mp4 output")
+
+        print("\nRendering best result...")
+        t, frames = run_trial(4, 5, +1, best[0], best[1], render=True)
+        mediapy.write_video("best_balance.mp4", frames, fps=30)
+        print(f"Video saved: best_balance.mp4 ({len(frames)} frames, {t:.1f}s survival)")

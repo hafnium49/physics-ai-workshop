@@ -7,7 +7,9 @@ Default:  MUJOCO_GL=egl python scripts/01_validate_assembly.py        (live stre
 Fallback: MUJOCO_GL=egl python scripts/01_validate_assembly.py --no-stream --duration 3
 """
 import os
+import sys
 os.environ.setdefault("MUJOCO_GL", "egl")
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import argparse
 import time

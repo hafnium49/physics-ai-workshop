@@ -11,7 +11,9 @@ Uses CORRECT joints and sign: joint5 (ctrl[4]) for Y, joint6 (ctrl[5]) for X, PO
 Run with: python scripts/04_challenge.py --level 2 --kp 50 --kd 10 [--force 1.0] [--freq 0.5]
 """
 import os
+import sys
 os.environ.setdefault("MUJOCO_GL", "egl")
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import argparse
 import mujoco

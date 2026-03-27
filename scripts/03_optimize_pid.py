@@ -8,7 +8,9 @@ Fallback: python scripts/03_optimize_pid.py --no-stream   (grid search + render 
 Dry run:  python scripts/03_optimize_pid.py --no-render   (grid search only, no video output)
 """
 import os
+import sys
 os.environ.setdefault("MUJOCO_GL", "egl")
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import argparse
 import mujoco

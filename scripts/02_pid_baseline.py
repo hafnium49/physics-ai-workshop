@@ -9,7 +9,9 @@ Fallback: --no-stream saves a single 10s attempt as .mp4.
 Run with: python scripts/02_pid_baseline.py [--no-stream] [--port 8080] [--kp 50] [--kd 10]
 """
 import os
+import sys
 os.environ.setdefault("MUJOCO_GL", "egl")
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import argparse
 import mujoco

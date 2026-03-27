@@ -16,6 +16,11 @@ import sys
 import time
 import numpy as np
 
+# Ensure project root is on sys.path so mujoco_streamer can be imported
+_project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _project_root not in sys.path:
+    sys.path.insert(0, _project_root)
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -48,8 +53,14 @@ def _reset_scene(model, data):
     mujoco.mj_resetData(model, data)
     plate_id, ball_id, ball_joint_id = _ids(model)
 
+    # Set arm joints using proper qpos addresses (free joint shifts layout)
+    joint_names = [f"joint{i}" for i in range(1, 8)]
+    for jn, val in zip(joint_names, HOME_POSE):
+        jid = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, jn)
+        data.qpos[model.jnt_qposadr[jid]] = val
     for i, val in enumerate(HOME_POSE):
-        data.qpos[i] = val
+        data.ctrl[i] = val
+    data.ctrl[7] = 0.04
     mujoco.mj_forward(model, data)
 
     plate_pos = data.xpos[plate_id]
@@ -185,28 +196,32 @@ def check_7_joint_authority():
     model, data = _load_model()
     plate_id, ball_id, ball_joint_id = _ids(model)
 
-    # Get baseline plate position at home pose
-    mujoco.mj_resetData(model, data)
-    for i, val in enumerate(HOME_POSE):
-        data.qpos[i] = val
-    mujoco.mj_forward(model, data)
-    base_pos = data.xpos[plate_id].copy()
+    # Get joint qpos addresses (can't use raw index — free joint shifts qpos layout)
+    joint_names = [f"joint{i}" for i in range(1, 8)]
+    joint_qpos_addrs = {}
+    for jn in joint_names:
+        jid = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, jn)
+        joint_qpos_addrs[jn] = model.jnt_qposadr[jid]
 
     deltas = {}
-    for jidx in [4, 5, 6]:  # joint5, joint6, joint7 (0-indexed)
+    for jnum in [5, 6, 7]:  # joint5, joint6, joint7
+        jn = f"joint{jnum}"
         mujoco.mj_resetData(model, data)
-        for i, val in enumerate(HOME_POSE):
-            data.qpos[i] = val
-        data.qpos[jidx] += 0.01
+        for name, val in zip(joint_names, HOME_POSE):
+            data.qpos[joint_qpos_addrs[name]] = val
+        mujoco.mj_forward(model, data)
+        base_pos = data.xpos[plate_id].copy()
+
+        data.qpos[joint_qpos_addrs[jn]] += 0.01
         mujoco.mj_forward(model, data)
         diff = data.xpos[plate_id] - base_pos
         dxy = np.sqrt(diff[0] ** 2 + diff[1] ** 2)
-        deltas[jidx] = dxy
+        deltas[jnum] = dxy
 
-    ok = deltas[4] > 0.001 and deltas[5] > 0.001 and deltas[6] < 0.001
+    ok = deltas[5] > 0.001 and deltas[6] > 0.001 and deltas[7] < 0.001
     msg = (
         f"Joint authority "
-        f"(j5={deltas[4]:.4f}, j6={deltas[5]:.4f}, j7={deltas[6]:.4f})"
+        f"(j5={deltas[5]:.4f}, j6={deltas[6]:.4f}, j7={deltas[7]:.4f})"
     )
     if not ok:
         msg += " — expected j5>0.001, j6>0.001, j7<0.001"

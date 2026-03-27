@@ -104,12 +104,52 @@ Ensure you are logged into your Anthropic/Claude account in your primary web bro
 
 ## 5. Phase 4: Pre-Flight Validation
 
-To guarantee a zero-friction experience for the engineers, perform a single end-to-end test on one of the provisioned accounts.
+### Automated pre-flight check
 
-1. From your personal laptop, open VS Code and use the Remote SSH extension to connect as a participant would (using the connection details from your SSH setup).
+From the cloned repo directory on the host:
+
+```bash
+cd /path/to/physics-ai-workshop
+MUJOCO_GL=egl python scripts/preflight.py
+```
+
+All 9 checks should print `[PASS]`. If any fail, fix the issue before proceeding.
+
+### Manual end-to-end test
+
+1. From your personal laptop, open VS Code and use the Remote SSH extension to connect as `engineer1`.
 2. Enter the workshop password.
 3. Open a new terminal in VS Code (`Ctrl + ~`).
 4. Verify the prompt shows `(workshop_env) engineer1@<hostname>`.
-5. Run the command: `claude -p "Load panda_ball_balance.xml and start a live stream on port 8081 using mujoco_streamer.py"`
+5. Run: `claude -p "Load panda_ball_balance.xml and start a live stream on port 8081 using mujoco_streamer.py"`
 6. Verify VS Code shows the port forwarding notification — click it and confirm you can see the live video in your browser.
 7. If Claude responds without asking for a login and the stream is visible, **your environments are perfectly provisioned.**
+
+---
+
+## 6. Reference Scripts & Sprint Mapping
+
+These are pre-built reference scripts that prove the pipeline works. **Participants build their own scripts from scratch using Claude Code** — they do NOT run these directly.
+
+| Script | Sprint | Purpose | Example |
+|--------|--------|---------|---------|
+| `preflight.py` | Pre-workshop (host only) | Validates model, streamer, PID, rendering | `MUJOCO_GL=egl python scripts/preflight.py` |
+| `01_validate_assembly.py` | Sprint 1: Explore | Load model, stream live, see robot + ball | `python scripts/01_validate_assembly.py` |
+| `02_pid_baseline.py` | Sprint 2: PID Discovery | Deliberately wrong PID baseline (0.8s survival) | `python scripts/02_pid_baseline.py --kp 50 --kd 10` |
+| `03_optimize_pid.py` | Sprint 2: PID Discovery | Grid search proving correct joints exist (host validation) | `python scripts/03_optimize_pid.py --no-render` |
+| `04_challenge.py` | Sprint 3: Challenges | Progressive disturbances: impulses, oscillation, speed record | `python scripts/04_challenge.py --level 2 --kp 50 --kd 10` |
+
+> All scripts support `--no-stream` (saves .mp4 fallback) and `--port` (default 8080).
+
+### "Break glass" fallback
+
+If a participant's Claude Code session is stuck at Sprint 2 after 25 minutes and cannot discover the correct joints, the host can quietly offer this hint:
+
+> *"Try telling Claude: The plate barely moves when you control joint 7. Focus on joint 5 and joint 6 instead, and make sure the correction sign is positive."*
+
+If Sprint 2 is completely blocked, copy `04_challenge.py` into the participant's workspace as a working reference to unblock Sprint 3:
+
+```bash
+sudo cp /path/to/physics-ai-workshop/scripts/04_challenge.py /home/engineer$i/physics_sim/
+sudo chown engineer$i:workshop /home/engineer$i/physics_sim/04_challenge.py
+```

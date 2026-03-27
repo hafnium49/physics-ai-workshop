@@ -60,6 +60,15 @@ for i in {1..5}; do
 
     # 7. Set per-user streaming port to avoid collisions
     echo "export STREAM_PORT=808$i" | sudo tee -a /home/engineer$i/.bashrc > /dev/null
+    echo "export MUJOCO_GL=egl" | sudo tee -a /home/engineer$i/.bashrc > /dev/null
+
+    # 8. Copy CLAUDE.md and Claude Code settings into workspace
+    sudo cp /path/to/physics-ai-workshop/CLAUDE.md /home/engineer$i/physics_sim/
+    sudo mkdir -p /home/engineer$i/physics_sim/.claude
+    sudo cp /path/to/physics-ai-workshop/.claude/settings.json /home/engineer$i/physics_sim/.claude/
+
+    # 9. Initialize git repo (Claude Code resolves settings from git root)
+    sudo -u engineer$i bash -c "cd ~/physics_sim && git init && git add -A && git commit -m 'Workshop setup'"
 
     sudo chown -R engineer$i:workshop /home/engineer$i/physics_sim/
 done

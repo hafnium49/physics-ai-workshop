@@ -123,15 +123,15 @@ for step in range(steps):
         break
 
     # Check if ball fell off
-    if abs(ball_rel_local[0]) > 0.14 or abs(ball_rel_local[1]) > 0.14 or ball_rel_world[2] < -0.02:
+    if abs(error_x) > 0.14 or abs(error_y) > 0.14 or ball_rel_world[2] < -0.02:
         survival_time = (step + 1) * dt
         break
 
     # Periodic diagnostics
     t = (step + 1) * dt
     if step % 200 == 0:
-        print(f"  t={t:.1f}s  ball_local: x={ball_rel_local[0]:+.4f} y={ball_rel_local[1]:+.4f}  "
-              f"ctrl6={data.ctrl[5]:.3f} ctrl7={data.ctrl[6]:.3f}")
+        print(f"  t={t:.1f}s  error: x={error_x:+.4f} y={error_y:+.4f}  "
+              f"ctrl5={data.ctrl[4]:.3f} ctrl6={data.ctrl[5]:.3f}")
 
     # Render
     if step % render_every == 0:

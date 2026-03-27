@@ -36,9 +36,9 @@ Build a Franka Panda arm holding a plate with a ball, then optimize PID control 
 
 ### Sprint Structure
 
-1. **Assembly** (15 min) — Combine models, attach plate to end-effector, render to video
-2. **Baseline** (15 min) — Drop ball onto plate, apply basic PID controller, record results
-3. **Optimization** (30 min) — Systematically tune Kp/Kd until ball stays centered for 10 seconds
+1. **Explore** (15 min) — Load the pre-assembled model, start live stream, move joints to build intuition
+2. **PID Discovery** (15 min) — Write a PID controller, discover which joints actually tilt the plate
+3. **Progressive Challenges** (30 min) — Add disturbances, tune gains under perturbation, push difficulty
 
 ## Live Visualization
 

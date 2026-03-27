@@ -1,6 +1,6 @@
 # Participant Guide — FY2026 Physics-AI Workshop
 
-Welcome! In this 1-hour workshop, you'll use an AI coding agent to build a physics simulation of a robotic arm balancing a ball on a plate.
+Welcome! In this 1-hour workshop, you'll use an AI coding agent to build a physics simulation of a robotic arm balancing a ball on a plate — and watch it live in your browser.
 
 **No programming experience needed.** You describe what you want in plain English, and the AI writes the code.
 
@@ -49,73 +49,116 @@ You're now talking to Claude Code. It can read files, write code, and run simula
 
 ---
 
-## Your First Task
+## How Live Viewing Works
 
-Copy and paste this into Claude:
+Since we're working over SSH, there are no graphical windows. Instead, your simulation runs on the server and **streams live video to your browser**.
 
-> Load the panda_ball_balance.xml model. Write a Python script that runs the simulation with the arm holding the plate and ball. Use the mujoco_streamer.py helper to stream the video live on port 8080. Hold the arm at the home pose and let me watch the ball.
+When Claude runs a simulation script, you'll see a pop-up in the bottom-right corner of VS Code saying something like *"Your application running on port 8080 is available."* Click **"Open in Browser"** to watch the robot simulation in real time.
 
-Claude will write a Python script, run it, and start a live video stream you can watch in your browser.
+If you miss the pop-up, go to the **Ports** tab at the bottom of VS Code and click the globe icon next to the port number.
 
 ---
 
-## Sprint Guide
+## Sprint 1: Explore the Robot (15 minutes)
 
-### Sprint 1: Explore the Model (15 minutes)
+**Goal:** See the robot and understand which joints control the plate.
 
-**Goal:** Get familiar with the robot and its joints.
+The simulation model is already pre-built — a Franka Panda robotic arm holding a plate with a ball on top. No assembly required.
 
-The simulation model is already pre-built for you — no assembly required.
+### Step 1 — See the robot
 
-Tell Claude to:
-- Load `panda_ball_balance.xml` and start a live stream so you can watch
-- Move individual joints one at a time so you can see which ones control the plate tilt
-- Explain what each joint does as it moves
+Copy and paste this into Claude:
 
-### Sprint 2: PID Discovery (15 minutes)
+> Read the panda_ball_balance.xml model file. Write a Python script that loads this model, places the ball on the plate, and streams the simulation live using the mujoco_streamer.py helper. Hold the arm at the home pose. Let me watch the ball fall off naturally.
 
-**Goal:** Find out which joints actually matter for balancing.
+Watch the browser — you'll see the robot arm, the plate, and the ball rolling off. That's expected! The arm isn't actively balancing yet.
 
-Tell Claude to:
-- Write a PID controller for the wrist joints to keep the ball centered
-- Run the simulation and watch it live
+### Step 2 — Explore the joints
 
-It will probably fail — the ball will roll off. That's the point! Now ask Claude:
-- *"Which joints actually tilt the plate?"*
-- *"Can you try controlling different joints?"*
+Now tell Claude:
 
-Keep iterating with Claude until you find the right joints and the right direction (sign) for the corrections.
+> Stop the simulation. I want to understand the robot's joints. Write a new script that moves joint 5 slowly back and forth by 0.1 radians while streaming live. Then do the same for joint 6 and joint 7, one at a time. Tell me what each joint does to the plate.
 
-### Sprint 3: Progressive Challenges (30 minutes)
+Watch each joint move. Notice which ones tilt the plate and which ones barely do anything. **This matters for the next sprint.**
 
-**Goal:** Make it robust.
+---
 
-**Challenge 1 — Survive a push.** Tell Claude to:
-- Add periodic force disturbances that push the ball sideways
-- Tune the Kp and Kd gains until the ball stays on the plate for 10 seconds despite the pushes
+## Sprint 2: Teach the Robot to Balance (15 minutes)
 
-**Challenge 2 — Stronger pushes.** Tell Claude to:
-- Increase the disturbance strength
-- Adjust the gains to compensate
+**Goal:** Build a controller that keeps the ball on the plate.
 
-**Challenge 3 (advanced) — Oscillating plate.** Tell Claude to:
-- Add a slow oscillation to the plate while also applying disturbances
-- Find gains that keep the ball centered through both
+### Step 1 — First attempt
 
-Feel free to ask Claude questions like:
+Tell Claude:
+
+> Write a PID controller that tries to keep the ball centered on the plate. Use the ball's position relative to the plate center as the error signal. Pick whichever wrist joints you think control the plate tilt. Stream the simulation live and print "Survival Time: X.X seconds" when the ball falls off. Auto-reset and try again.
+
+Watch the live stream. The ball will probably fall off quickly. Look at the **Survival Time** printed in the terminal.
+
+### Step 2 — Diagnose and fix
+
+If the ball falls off fast (under 2 seconds), ask Claude:
+
+> The ball fell off in less than 2 seconds. Can you check which joints actually move the plate? Try nudging each wrist joint by a small amount and measure how much the plate position changes. Then switch to the joints that have the most effect.
+
+Claude will test each joint's authority over the plate and discover the right ones. Once it switches to the correct joints and sign, survival time should jump dramatically.
+
+### Step 3 — Confirm it works
+
+Once the ball stays on for 10 seconds:
+
+> Great! The ball is balancing. Can you explain which joints you're controlling and why? What did you change from the first attempt?
+
+This is the key insight: **which joints to control matters more than the gain values.**
+
+---
+
+## Sprint 3: Progressive Challenges (30 minutes)
+
+**Goal:** Make the balancing robust under disturbances.
+
+Now that the ball stays balanced on a still plate, let's make it harder.
+
+### Challenge 1 — Survive a push
+
+> Add random force disturbances that push the ball sideways every 2 seconds. Start with a force magnitude of 0.5 Newtons. Stream it live and print survival time. Does the ball still stay on the plate for 10 seconds?
+
+If the ball falls off, ask Claude to tune the gains:
+
+> The ball survived 4 seconds with force 0.5N. Try increasing Kp or Kd to make the controller react faster. Run several experiments and tell me which gains work best.
+
+### Challenge 2 — Stronger pushes
+
+> Increase the disturbance force to 1.0 Newton. Adjust the gains to compensate. What's the highest force the ball can survive for 10 seconds?
+
+### Challenge 3 (advanced) — Oscillating plate
+
+> Add a slow sinusoidal oscillation to the plate — make the arm rock the plate in a small circle while still keeping the ball centered. Start at 0.5 Hz. What's the fastest oscillation frequency where the ball still survives 10 seconds?
+
+### Bonus — Competition
+
+If time allows, try to beat other participants:
+
+- **Highest disturbance force survived for 10 seconds**
+- **Fastest plate oscillation with ball balanced**
+- **Longest survival time with both disturbances and oscillation**
+
+Feel free to ask Claude anything along the way:
 - *"What is PID control?"*
 - *"Why does the ball keep falling to the left?"*
-- *"Can you try 10 different Kp values and show me which one works best?"*
+- *"What happens if I set Kd to zero?"*
+- *"Can you try 10 different Kp values and show me which is best?"*
 
 ---
 
 ## Tips
 
-- **Ask Claude to use the `mujoco_streamer.py` helper for live viewing in your browser.** Since we're working over SSH, there are no graphical windows — the streamer sends video to your browser instead.
-- **If the video stream stops,** just tell Claude to restart it.
-- **Ask questions freely.** Claude can explain any concept — MuJoCo, PID control, physics parameters, Python code.
-- **If something breaks,** just tell Claude: *"That didn't work. Here's the error:"* and paste the error message.
-- **Be specific about what you want.** Instead of "make it better," try "increase Kp to 100 and decrease Kd to 5."
+- **Watch the browser, not the terminal.** The live video stream is where you see the robot. The terminal shows numbers and status.
+- **If the video stream stops,** just tell Claude: *"Restart the live stream."*
+- **Ask questions freely.** Claude can explain physics, control theory, or anything about the simulation.
+- **If something breaks,** tell Claude: *"That didn't work. Here's the error:"* and paste the error message.
+- **Be specific.** Instead of *"make it better,"* try *"increase Kp to 100 and decrease Kd to 5."*
+- **Ctrl+C stops the simulation.** If you want to try something new, press `Ctrl+C` in the terminal to stop the current script.
 
 ---
 
@@ -127,4 +170,5 @@ Feel free to ask Claude questions like:
 | Terminal is frozen | Open a new terminal: Terminal → New Terminal |
 | Claude is not responding | Press `Ctrl+C` to cancel, then type `claude` to restart |
 | Can't see the live video | Click the port forwarding popup in VS Code, or go to the Ports tab and click the globe icon |
+| Video shows but is frozen | Tell Claude: "Restart the live stream" |
 | `(workshop_env)` not showing | Run: `source ~/workshop_env/bin/activate` |

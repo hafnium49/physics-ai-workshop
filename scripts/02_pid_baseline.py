@@ -67,9 +67,12 @@ data.qvel[ball_qvel_addr:ball_qvel_addr + 6] = 0
 mujoco.mj_forward(model, data)
 
 # --- PID controllers for two tilt axes ---
-# NOTE: This baseline uses joint6+joint7. Joint7 has very low plate-tilt
-# authority. The "Autonomous Scientist" task is for Claude to discover that
-# joint5+joint6 is the correct pairing and the correct sign mapping.
+# DELIBERATE BASELINE: Uses joint6+joint7 with WRONG sign (negative).
+# Joint7 has almost zero plate-tilt authority and the sign is inverted.
+# The "Autonomous Scientist" task is for Claude to discover:
+#   1. joint5+joint6 is the correct pairing (not joint6+joint7)
+#   2. The correction sign should be POSITIVE (not negative)
+# With correct joints and sign, almost any Kp/Kd achieves 10s.
 pid_x = PIDController(KP, KI, KD, dt)
 pid_y = PIDController(KP, KI, KD, dt)
 
@@ -105,9 +108,9 @@ for step in range(steps):
     correction_y = pid_y.compute(error_y)
 
     # Apply corrections to joint6 (ctrl[5]) and joint7 (ctrl[6])
-    # NOTE: This is the deliberate baseline — joint7 has low authority
-    data.ctrl[5] = home[5] + correction_x  # joint6 for X
-    data.ctrl[6] = home[6] + correction_y  # joint7 for Y (weak!)
+    # NOTE: Wrong joints AND wrong sign (negative) — deliberate baseline failure
+    data.ctrl[5] = home[5] - correction_x  # joint6 for X (wrong sign!)
+    data.ctrl[6] = home[6] - correction_y  # joint7 for Y (weak joint!)
 
     # NaN check
     if np.any(np.isnan(data.xpos[ball_id])):

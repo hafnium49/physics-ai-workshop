@@ -151,6 +151,7 @@ Validation results (dry run, no video):
 6. ~~Update participant-guide.md and host-runbook.md~~ DONE
 7. ~~Pre-flight sanity check~~ DONE
 8. ~~Workshop agent system~~ DONE (simplified from 3-review consensus)
+9. ~~Port migration 8080→18080~~ DONE (all 11 files, preflight passes)
 
 ---
 
@@ -219,3 +220,23 @@ Three reviews (Software Architect, Game Designer, Reality Checker) converged: or
 - `env` block in settings.json — unknown if it propagates to Bash subprocesses
 - Permission pattern matching — verify `Bash(python:*)` works empirically
 - Full dry run as engineer1 with `git init` workspace
+
+---
+
+## Step 10: Port migration 8080→18080 — DONE
+
+Port 8080 is commonly used by web servers/proxies and likely occupied on the DGX Spark. Migrated all ports to the 18080 range.
+
+| User | Port |
+|------|------|
+| Host demo | 18080 |
+| engineer1 | 18081 |
+| engineer2-5 | 18082-18085 |
+
+Changes across 11 files:
+- `mujoco_streamer.py` — `__init__` now auto-reads `STREAM_PORT` env var, falls back to 18080. CLAUDE.md examples simplified to `LiveStreamer()` (no port arg).
+- All 4 reference scripts — argparse default `8080` → `18080`
+- All 5 docs — port references updated
+- `.claude/settings.local.json` — removed stale `--port 8080` test permission
+
+Verified: `grep -rn "8080" *.py *.md` returns only `18080` matches. Preflight all 9 checks pass.

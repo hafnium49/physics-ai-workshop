@@ -85,8 +85,11 @@ offset = amplitude * sin(2 * pi * frequency * t)
 ctrl[joint] = home[joint] + pid_correction + offset
 ```
 
+### Survival Map
+Drop the ball at many different starting positions across the plate (e.g., a 20x20 grid over ±120mm). Run each trial headless (no rendering — fast), record survival time. Render a 2D contour plot using matplotlib showing survival time as a function of initial ball position. This reveals the PID controller's "basin of attraction" — where it can recover from vs. where the ball is doomed. Use `contourf` with a perceptually uniform colormap (e.g., `viridis`).
+
 ### Comparative Experiments
-Run multiple parameter values, record survival time for each, report the best. Useful for finding the gain sweet spot or the maximum disturbance force the controller can handle.
+Run multiple parameter values, record survival time for each, report the best. Useful for finding the gain sweet spot or comparing survival maps across different PID gains.
 
 ## Streaming and Interactive Camera
 

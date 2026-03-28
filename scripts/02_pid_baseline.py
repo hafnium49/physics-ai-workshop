@@ -260,6 +260,7 @@ else:
     print(f"Press Ctrl+C to stop.\n")
 
     streamer = LiveStreamer(port=args.port)
+    streamer.start()
     fps = 30
     render_every = int(1.0 / (fps * dt))
     attempt = 0

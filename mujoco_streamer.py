@@ -1,20 +1,27 @@
 """
-MuJoCo MJPEG Live Streamer
+MuJoCo MJPEG Live Streamer with Interactive Camera Control
 
 Streams MuJoCo simulation frames as MJPEG over HTTP for browser viewing.
+Browser mouse/touch events control the camera via POST /camera.
 
 IMPORTANT: Render frames on the simulation thread only. Do not call
 renderer.render() from the HTTP handler thread — OpenGL contexts are
 not thread-safe. Pass the already-rendered numpy array to streamer.update().
 
-Usage (3 lines):
+Usage:
     from mujoco_streamer import LiveStreamer
     streamer = LiveStreamer()
     streamer.start()
-    # In simulation loop: streamer.update(renderer.render())
+    cam = streamer.make_free_camera(model)
+    # In simulation loop:
+    streamer.drain_camera_commands(model, cam, renderer.scene)
+    renderer.update_scene(data, camera=cam)
+    streamer.update(renderer.render())
 """
 
+import collections
 import io
+import json
 import os
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -52,20 +59,43 @@ class _StreamingServer(ThreadingMixIn, HTTPServer):
 _HTML_PAGE = b"""\
 <html>
 <head><title>MuJoCo Live</title></head>
-<body style="margin:0; background:#1a1a2e; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; font-family:system-ui; color:#eee;">
-  <div style="position:relative; display:inline-block;">
-    <img id="stream" src="/stream" style="border:2px solid #333; border-radius:8px; max-width:95vw; max-height:85vh;" />
-    <div id="overlay" style="position:absolute; top:8px; right:12px; font-size:13px; background:rgba(0,0,0,0.6); padding:4px 10px; border-radius:4px;">
-      <span id="status" style="color:#4ade80;">\xe2\x97\x8f</span> <span id="fps">-- fps</span>
+<body style="margin:0; background:#1a1a2e; display:flex; flex-direction:column;
+             align-items:center; justify-content:center; height:100vh;
+             font-family:system-ui; color:#eee; user-select:none;">
+
+  <div id="container" style="position:relative; display:inline-block;">
+    <img id="stream" src="/stream"
+         style="border:2px solid #333; border-radius:8px;
+                max-width:95vw; max-height:85vh; display:block;"
+         draggable="false" />
+
+    <div id="controls"
+         style="position:absolute; inset:0; cursor:grab; border-radius:8px;
+                touch-action:none;">
+    </div>
+
+    <div id="overlay"
+         style="position:absolute; top:8px; right:12px; font-size:13px;
+                background:rgba(0,0,0,0.6); padding:4px 10px;
+                border-radius:4px; pointer-events:none;">
+      <span id="status" style="color:#4ade80;">&#x25cf;</span>
+      <span id="fps">-- fps</span>
     </div>
   </div>
-  <p style="margin-top:12px; font-size:14px; opacity:0.6;">Physics-AI Workshop \xe2\x80\x94 Live Simulation</p>
+
+  <p style="margin-top:12px; font-size:14px; opacity:0.6;">
+    Physics-AI Workshop \\xe2\\x80\\x94 Live Simulation
+    &nbsp;|&nbsp; Left-drag: orbit &nbsp; Scroll: zoom &nbsp; Right-drag: pan
+    &nbsp;|&nbsp; R: reset camera
+  </p>
+
   <script>
+    // -- Stream & FPS --
     const img = document.getElementById('stream');
     const fpsEl = document.getElementById('fps');
     const statusEl = document.getElementById('status');
-    let frames = 0, lastTime = performance.now();
-    img.onload = () => { frames++; };
+    let frameCount = 0, lastTime = performance.now();
+    img.onload = () => { frameCount++; };
     img.onerror = () => {
       statusEl.style.color = '#f87171';
       fpsEl.textContent = 'reconnecting...';
@@ -73,10 +103,98 @@ _HTML_PAGE = b"""\
     };
     setInterval(() => {
       const now = performance.now();
-      const fps = Math.round(frames / ((now - lastTime) / 1000));
-      if (frames > 0) { statusEl.style.color = '#4ade80'; fpsEl.textContent = fps + ' fps'; }
-      frames = 0; lastTime = now;
+      const fps = Math.round(frameCount / ((now - lastTime) / 1000));
+      if (frameCount > 0) { statusEl.style.color = '#4ade80'; fpsEl.textContent = fps + ' fps'; }
+      frameCount = 0; lastTime = now;
     }, 1000);
+
+    // -- Camera control state --
+    const ctrl = document.getElementById('controls');
+    let activeButton = -1, lastX = 0, lastY = 0;
+    let pendingRotate = null, pendingPan = null, pendingZoom = 0;
+    let inflight = false, lastSendTime = 0;
+    const MIN_SEND_INTERVAL = 33;
+
+    // -- Pointer events --
+    ctrl.addEventListener('pointerdown', (e) => {
+      if (e.button !== 0 && e.button !== 2) return;
+      activeButton = e.button;
+      lastX = e.clientX; lastY = e.clientY;
+      ctrl.setPointerCapture(e.pointerId);
+      ctrl.style.cursor = 'grabbing';
+      e.preventDefault();
+    });
+    ctrl.addEventListener('pointermove', (e) => {
+      if (activeButton === -1) return;
+      const h = ctrl.clientHeight || 1;
+      const dx = (e.clientX - lastX) / h;
+      const dy = -(e.clientY - lastY) / h;
+      lastX = e.clientX; lastY = e.clientY;
+      if (activeButton === 0) {
+        if (!pendingRotate) pendingRotate = {dx:0, dy:0};
+        pendingRotate.dx += dx; pendingRotate.dy += dy;
+      } else if (activeButton === 2) {
+        if (!pendingPan) pendingPan = {dx:0, dy:0};
+        pendingPan.dx += dx; pendingPan.dy += dy;
+      }
+    });
+    ctrl.addEventListener('pointerup', (e) => {
+      activeButton = -1;
+      ctrl.releasePointerCapture(e.pointerId);
+      ctrl.style.cursor = 'grab';
+    });
+    ctrl.addEventListener('pointercancel', () => {
+      activeButton = -1; ctrl.style.cursor = 'grab';
+    });
+
+    // -- Scroll -> zoom --
+    ctrl.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      pendingZoom += Math.max(-1, Math.min(1, -e.deltaY / 100));
+    }, {passive: false});
+
+    // -- Context menu suppression --
+    ctrl.addEventListener('contextmenu', (e) => e.preventDefault());
+
+    // -- Throttled send loop --
+    function sendLoop() {
+      requestAnimationFrame(sendLoop);
+      const now = performance.now();
+      if (now - lastSendTime < MIN_SEND_INTERVAL || inflight) return;
+      const commands = [];
+      if (pendingRotate) {
+        commands.push({action:'rotate', dx:pendingRotate.dx, dy:pendingRotate.dy});
+        pendingRotate = null;
+      }
+      if (pendingPan) {
+        commands.push({action:'pan', dx:pendingPan.dx, dy:pendingPan.dy});
+        pendingPan = null;
+      }
+      if (Math.abs(pendingZoom) > 0.001) {
+        commands.push({action:'zoom', dx:0, dy:pendingZoom});
+        pendingZoom = 0;
+      }
+      if (commands.length === 0) return;
+      inflight = true; lastSendTime = now;
+      fetch('/camera', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({commands})
+      }).then(() => { inflight = false; }).catch(() => { inflight = false; });
+    }
+    requestAnimationFrame(sendLoop);
+
+    // -- Keyboard: R to reset --
+    document.addEventListener('keydown', (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      if (e.key === 'r' || e.key === 'R') {
+        fetch('/camera', {
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({commands:[{action:'reset'}]})
+        });
+      }
+    });
   </script>
 </body>
 </html>
@@ -87,13 +205,18 @@ BOUNDARY = b"FRAME"
 
 class LiveStreamer:
     """
-    MJPEG live streamer for MuJoCo simulations.
+    MJPEG live streamer for MuJoCo simulations with interactive camera.
 
     Public API:
         streamer = LiveStreamer()
         streamer.start()
-        streamer.update(rgb_array)   # call from simulation loop
-        streamer.stop()              # clean shutdown
+        cam = streamer.make_free_camera(model)
+        # In loop:
+        streamer.drain_camera_commands(model, cam, renderer.scene)
+        renderer.update_scene(data, camera=cam)
+        streamer.update(renderer.render())
+        # Cleanup:
+        streamer.stop()
     """
 
     def __init__(self, port=None):
@@ -104,13 +227,72 @@ class LiveStreamer:
         self._running = False
         self._server = None
         self._server_thread = None
+        self._camera_commands = collections.deque(maxlen=256)
+        self._initial_cam_state = None  # set by make_free_camera for reset
+
+    def make_free_camera(self, model, named="side"):
+        """Create a persistent free camera initialized from the model defaults.
+
+        Args:
+            model: MjModel instance
+            named: name of XML camera to approximate (used only for reference;
+                   the free camera uses model.stat for its initial pose)
+
+        Returns:
+            mujoco.MjvCamera set to mjCAMERA_FREE
+        """
+        import mujoco
+        cam = mujoco.MjvCamera()
+        cam.type = mujoco.mjtCamera.mjCAMERA_FREE
+        mujoco.mjv_defaultFreeCamera(model, cam)
+        # Save initial state for reset
+        self._initial_cam_state = {
+            "azimuth": cam.azimuth,
+            "elevation": cam.elevation,
+            "distance": cam.distance,
+            "lookat": cam.lookat.copy(),
+        }
+        return cam
+
+    def drain_camera_commands(self, model, cam, scene):
+        """Apply pending camera commands from the browser.
+
+        Call this from the simulation thread before renderer.update_scene().
+        Safe to call even if no commands are pending.
+
+        Args:
+            model: MjModel instance
+            cam: MjvCamera instance (must be mjCAMERA_FREE)
+            scene: MjvScene instance (renderer.scene)
+        """
+        import mujoco
+        while self._camera_commands:
+            try:
+                cmd = self._camera_commands.popleft()
+            except IndexError:
+                break
+            action = cmd.get("action")
+            dx = cmd.get("dx", 0.0)
+            dy = cmd.get("dy", 0.0)
+            if action == "rotate":
+                mujoco.mjv_moveCamera(model, mujoco.mjtMouse.mjMOUSE_ROTATE_V, dx, dy, scene, cam)
+            elif action == "pan":
+                mujoco.mjv_moveCamera(model, mujoco.mjtMouse.mjMOUSE_MOVE_V, dx, dy, scene, cam)
+            elif action == "zoom":
+                mujoco.mjv_moveCamera(model, mujoco.mjtMouse.mjMOUSE_ZOOM, 0, dy, scene, cam)
+            elif action == "reset" and self._initial_cam_state:
+                cam.azimuth = self._initial_cam_state["azimuth"]
+                cam.elevation = self._initial_cam_state["elevation"]
+                cam.distance = self._initial_cam_state["distance"]
+                cam.lookat[:] = self._initial_cam_state["lookat"]
 
     def start(self):
         """Start the HTTP server in a daemon thread."""
         self._running = True
 
         stream_state = self._stream_state
-        running_ref = self  # closure over instance for _running check
+        camera_commands = self._camera_commands
+        running_ref = self
 
         class _MJPEGHandler(BaseHTTPRequestHandler):
 
@@ -157,6 +339,20 @@ class LiveStreamer:
                     except (BrokenPipeError, ConnectionResetError):
                         pass
 
+                else:
+                    self.send_error(404)
+
+            def do_POST(self):
+                if self.path == "/camera":
+                    try:
+                        length = int(self.headers.get("Content-Length", 0))
+                        body = json.loads(self.rfile.read(length))
+                        for cmd in body.get("commands", []):
+                            camera_commands.append(cmd)
+                    except (json.JSONDecodeError, ValueError):
+                        pass
+                    self.send_response(204)
+                    self.end_headers()
                 else:
                     self.send_error(404)
 

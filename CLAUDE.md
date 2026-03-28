@@ -49,9 +49,11 @@ from mujoco_streamer import LiveStreamer
 
 streamer = LiveStreamer()
 streamer.start()
+cam = streamer.make_free_camera(model)
 
 # In simulation loop:
-renderer.update_scene(data, camera="side")
+streamer.drain_camera_commands(model, cam, renderer.scene)
+renderer.update_scene(data, camera=cam)
 streamer.update(renderer.render())
 ```
 
@@ -59,6 +61,8 @@ Each participant has a unique streaming port assigned via the `STREAM_PORT` envi
 
 VS Code automatically detects the port and offers "Open in Browser".
 Fall back to `mediapy.write_video()` only if streaming is unavailable.
+
+The browser view is interactive: left-drag to orbit, scroll to zoom, right-drag to pan, press R to reset the camera. Scripts must use `streamer.make_free_camera(model)` and call `streamer.drain_camera_commands()` in the render loop to enable this.
 
 ## Ball-on-Plate Balancing Task
 

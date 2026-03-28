@@ -9,8 +9,6 @@
     <body name="plate" pos="0 0 0.5">
       <geom name="plate_geom" type="box" size="0.15 0.15 0.005"
             rgba="0.8 0.8 0.8 1" mass="0.5"/>
-      <geom name="stem" type="cylinder" size="0.007 0.0125"
-            pos="0 0 -0.0175" rgba="0.6 0.6 0.6 1" mass="0"/>
       <body name="ball" pos="0 0 0.025">
         <joint name="ball_free" type="free"/>
         <geom name="ball_geom" type="sphere" size="0.02"

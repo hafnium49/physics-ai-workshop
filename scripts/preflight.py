@@ -218,13 +218,13 @@ def check_7_joint_authority():
         dxy = np.sqrt(diff[0] ** 2 + diff[1] ** 2)
         deltas[jnum] = dxy
 
-    ok = deltas[5] > 0.001 and deltas[6] > 0.001 and deltas[7] < 0.001
+    ok = deltas[5] > 0.001 and deltas[6] > 0.001 and deltas[7] < deltas[5]
     msg = (
         f"Joint authority "
         f"(j5={deltas[5]:.4f}, j6={deltas[6]:.4f}, j7={deltas[7]:.4f})"
     )
     if not ok:
-        msg += " — expected j5>0.001, j6>0.001, j7<0.001"
+        msg += " — expected j5>0.001, j6>0.001, j7<j5"
     return ok, msg
 
 

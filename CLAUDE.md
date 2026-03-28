@@ -63,7 +63,7 @@ Fall back to `mediapy.write_video()` only if streaming is unavailable.
 ## Ball-on-Plate Balancing Task
 
 The pre-assembled model `panda_ball_balance.xml` has:
-- Plate rigidly attached inside the `hand` body at the end-effector, with a stem gripped by the fingers (set gripper to `ctrl[7]=0.008`)
+- Plate rigidly attached inside the `hand` body, offset so one edge is gripped by the fingers (`ctrl[7]=0.008`). The plate extends outward from the grip point.
 - Ball as a top-level free body — must be repositioned onto the plate in scripts
 
 **Important physics notes:**

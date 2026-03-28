@@ -191,6 +191,7 @@ else:
         cam_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_CAMERA, "side")
         streamer = LiveStreamer(port=stream_port)
         streamer.start()
+        cam = streamer.make_free_camera(model)
 
         data = mujoco.MjData(model)
         dt = model.opt.timestep
@@ -243,7 +244,8 @@ else:
                         break
 
                     if step % render_every == 0:
-                        renderer.update_scene(data, camera=cam_id)
+                        streamer.drain_camera_commands(model, cam, renderer.scene)
+                        renderer.update_scene(data, camera=cam)
                         streamer.update(renderer.render())
         except KeyboardInterrupt:
             print("\nStreaming stopped.")

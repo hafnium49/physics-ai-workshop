@@ -305,6 +305,7 @@ else:
 
     streamer = LiveStreamer(port=stream_port)
     streamer.start()
+    cam = streamer.make_free_camera(model)
     fps = 30
     render_every = int(1.0 / (fps * dt))
     attempt = 0
@@ -413,7 +414,8 @@ else:
 
                 # Stream frame
                 if step % render_every == 0:
-                    renderer.update_scene(data, camera=cam_id)
+                    streamer.drain_camera_commands(model, cam, renderer.scene)
+                    renderer.update_scene(data, camera=cam)
                     streamer.update(renderer.render())
 
             # Clean up forces

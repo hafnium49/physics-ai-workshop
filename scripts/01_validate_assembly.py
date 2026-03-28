@@ -127,6 +127,7 @@ if use_stream:
     # ---- Live MJPEG streaming mode ----
     streamer = LiveStreamer(port=stream_port)
     streamer.start()
+    cam = streamer.make_free_camera(model)
     print(f"\nLive stream started on http://localhost:{stream_port}")
     print("Press Ctrl+C to stop.\n")
 
@@ -148,7 +149,8 @@ if use_stream:
 
                 # Render & push frame
                 if step % render_every == 0:
-                    renderer.update_scene(data, camera=cam_id)
+                    streamer.drain_camera_commands(model, cam, renderer.scene)
+                    renderer.update_scene(data, camera=cam)
                     streamer.update(renderer.render())
 
                 # Diagnostics every second

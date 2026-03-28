@@ -265,6 +265,7 @@ else:
 
     streamer = LiveStreamer(port=stream_port)
     streamer.start()
+    cam = streamer.make_free_camera(model)
     fps = 30
     render_every = int(1.0 / (fps * dt))
     attempt = 0
@@ -304,7 +305,8 @@ else:
 
                 # Stream frame
                 if step % render_every == 0:
-                    renderer.update_scene(data, camera=cam_id)
+                    streamer.drain_camera_commands(model, cam, renderer.scene)
+                    renderer.update_scene(data, camera=cam)
                     streamer.update(renderer.render())
 
             print(f"Survival Time: {survival_time:.1f} seconds")
@@ -320,7 +322,8 @@ else:
                         data.ctrl[i] = home[i]
                     data.ctrl[7] = 0.008
                     if fall_step % render_every == 0:
-                        renderer.update_scene(data, camera=cam_id)
+                        streamer.drain_camera_commands(model, cam, renderer.scene)
+                        renderer.update_scene(data, camera=cam)
                         streamer.update(renderer.render())
                     ball_z = data.xpos[ball_id][2]
                     if landed_at is None and ball_z < 0.05:

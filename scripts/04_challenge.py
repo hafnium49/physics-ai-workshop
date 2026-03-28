@@ -423,57 +423,19 @@ else:
                     print("ERROR: Level 4 requires matplotlib. Install with: pip install matplotlib")
                     break
 
-                print(f"--- Computing survival map (attempt {attempt}) ---")
+                print(f"Computing survival map...")
                 xs, ys, grid = run_survival_grid(args.grid)
                 best_idx = np.unravel_index(grid.argmax(), grid.shape)
-                print(f"  Max survival: {grid.max():.1f}s at offset "
+                print(f"Max survival: {grid.max():.1f}s at offset "
                       f"({xs[best_idx[1]]*1000:.0f}mm, {ys[best_idx[0]]*1000:.0f}mm)")
-                print(f"  Mean survival: {grid.mean():.1f}s")
-                print(f"  Positions surviving 10s: {(grid >= 9.9).sum()}/{args.grid**2}")
+                print(f"Mean survival: {grid.mean():.1f}s")
+                print(f"Positions surviving 10s: {(grid >= 9.9).sum()}/{args.grid**2}")
 
-                # Display the contour map for 5 seconds
                 map_img = render_survival_map(xs, ys, grid)
-                display_steps = int(5.0 * fps)
-                for _ in range(display_steps):
+                print("Displaying survival map. Press Ctrl+C to stop.")
+                while True:
                     streamer.update(map_img)
                     time.sleep(1.0 / fps)
-
-                # Live trial at the sweet spot for 10 seconds
-                print(f"  Streaming live trial at sweet spot...")
-                reset_scene(model, data)
-                # Place ball at sweet spot
-                ba = model.jnt_qposadr[ball_joint_id]
-                bv = model.jnt_dofadr[ball_joint_id]
-                data.qpos[ba:ba+3] = data.xpos[plate_id] + [xs[best_idx[1]], ys[best_idx[0]], 0.025]
-                data.qpos[ba+3:ba+7] = [1, 0, 0, 0]
-                data.qvel[bv:bv+6] = 0
-                mujoco.mj_forward(model, data)
-
-                pid_x = PIDController(KP, KI, KD, dt)
-                pid_y = PIDController(KP, KI, KD, dt)
-                live_steps = int(10.0 / dt)
-                for step in range(live_steps):
-                    mujoco.mj_step(model, data)
-                    if np.any(np.isnan(data.xpos[ball_id])):
-                        break
-                    for i in [0, 1, 2, 3, 4]:
-                        data.ctrl[i] = home[i]
-                    data.ctrl[7] = 0.008
-                    brel = data.xpos[ball_id] - data.xpos[plate_id]
-                    data.ctrl[5] = home[5] + pid_x.compute(brel[0])
-                    data.ctrl[6] = home[6] + pid_y.compute(brel[1])
-                    if abs(brel[0]) > 0.14 or abs(brel[1]) > 0.14 or brel[2] < -0.02:
-                        print(f"  Sweet spot trial survived: {(step+1)*dt:.1f}s")
-                        break
-                    if step % render_every == 0:
-                        streamer.drain_camera_commands(model, cam, renderer.scene)
-                        renderer.update_scene(data, camera=cam)
-                        streamer.update(renderer.render())
-                else:
-                    print(f"  Sweet spot trial survived: 10.0s")
-
-                print()
-                continue  # skip the Level 1-3 simulation loop below
 
             rng = np.random.RandomState(42 + attempt)
             print(f"--- Attempt {attempt} ---")

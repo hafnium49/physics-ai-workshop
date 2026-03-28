@@ -34,14 +34,18 @@ parser.add_argument("--no-stream", action="store_true",
                     help="Disable live streaming; save .mp4 instead")
 parser.add_argument("--no-render", action="store_true",
                     help="Skip all rendering (dry run, no video output)")
-parser.add_argument("--port", type=int, default=18080,
-                    help="MJPEG streaming port (default: 18080)")
+parser.add_argument("--port", type=int, default=None,
+                    help="Streaming port (default: STREAM_PORT env var or 18080)")
 args = parser.parse_args()
+stream_port = args.port if args.port is not None else int(os.environ.get("STREAM_PORT", 18080))
 
 # ---------------------------------------------------------------------------
 # Load model
 # ---------------------------------------------------------------------------
-model = mujoco.MjModel.from_xml_path("content/panda_ball_balance.xml")
+_script_dir = os.path.dirname(os.path.abspath(__file__))
+_project_root = os.path.dirname(_script_dir)
+
+model = mujoco.MjModel.from_xml_path(os.path.join(_project_root, "content", "panda_ball_balance.xml"))
 
 plate_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, "plate")
 ball_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, "ball")
@@ -135,43 +139,44 @@ def run_trial(joint_x_idx, joint_y_idx, sign, kp, kd, duration=10.0, render=Fals
     return (duration, frames) if render else duration
 
 
-# --- Phase 1: Find the correct joint pairing ---
-print("=" * 60)
-print("Phase 1: Testing joint pairings (Kp=2, Kd=0)")
-print("=" * 60)
+try:
+    # --- Phase 1: Find the correct joint pairing ---
+    print("=" * 60)
+    print("Phase 1: Testing joint pairings (Kp=2, Kd=0)")
+    print("=" * 60)
 
-# Pairings: (name, jx_ctrl_idx, jy_ctrl_idx)
-# jx = actuator index controlling plate X, jy = actuator index controlling plate Y
-# Empirically: joint6 (ctrl[5]) -> plate X, joint7 (ctrl[6]) -> plate Y
-pairings = [
-    ("j6(X)+j7(Y)", 5, 6),   # correct pairing
-    ("j6(X)+j5(Y)", 5, 4),   # also works (alternate)
-    ("j5(X)+j6(Y)", 4, 5),   # axes swapped
-    ("j5(X)+j4(Y)", 4, 3),   # wrong joints entirely
-]
+    pairings = [
+        ("j6(X)+j7(Y)", 5, 6),   # correct pairing
+        ("j6(X)+j5(Y)", 5, 4),   # also works (alternate)
+        ("j5(X)+j6(Y)", 4, 5),   # axes swapped
+        ("j5(X)+j4(Y)", 4, 3),   # wrong joints entirely
+    ]
 
-for name, jx, jy in pairings:
-    for sign in [+1, -1]:
-        t = run_trial(jx, jy, sign, kp=2, kd=0, duration=5.0)
-        marker = " <-- WORKS" if t >= 5.0 else ""
-        print(f"  {name} sign={sign:+d} -> {t:.1f}s{marker}")
+    for name, jx, jy in pairings:
+        for sign in [+1, -1]:
+            t = run_trial(jx, jy, sign, kp=2, kd=0, duration=5.0)
+            marker = " <-- WORKS" if t >= 5.0 else ""
+            print(f"  {name} sign={sign:+d} -> {t:.1f}s{marker}")
 
-# --- Phase 2: Confirm with the winning pairing ---
-print()
-print("=" * 60)
-print("Phase 2: Gain search with j6(X)+j7(Y), sign=+1")
-print("=" * 60)
+    # --- Phase 2: Confirm with the winning pairing ---
+    print()
+    print("=" * 60)
+    print("Phase 2: Gain search with j6(X)+j7(Y), sign=+1")
+    print("=" * 60)
 
-results = []
-for kp in [1, 2, 3, 5, 10]:
-    for kd in [0, 1, 2, 5]:
-        t = run_trial(5, 6, +1, kp, kd)
-        results.append((kp, kd, t))
-        marker = " ***" if t >= 10.0 else ""
-        print(f"  Kp={kp:>3d} Kd={kd:>2d} -> Survival Time: {t:.1f}s{marker}")
+    results = []
+    for kp in [1, 2, 3, 5, 10]:
+        for kd in [0, 1, 2, 5]:
+            t = run_trial(5, 6, +1, kp, kd)
+            results.append((kp, kd, t))
+            marker = " ***" if t >= 10.0 else ""
+            print(f"  Kp={kp:>3d} Kd={kd:>2d} -> Survival Time: {t:.1f}s{marker}")
 
-best = max(results, key=lambda x: x[2])
-print(f"\nBest: Kp={best[0]}, Kd={best[1]}, Survival={best[2]:.1f}s")
+    best = max(results, key=lambda x: x[2])
+    print(f"\nBest: Kp={best[0]}, Kd={best[1]}, Survival={best[2]:.1f}s")
+except KeyboardInterrupt:
+    print("\nGrid search interrupted.")
+    raise SystemExit(0)
 
 # --- Phase 3: Render the best result (unless --no-render) ---
 if args.no_render:
@@ -181,67 +186,65 @@ else:
 
     if use_stream:
         # ---- Live MJPEG streaming of best result ----
-        print(f"\nStreaming best result on port {args.port}...")
+        print(f"\nStreaming best result on port {stream_port}...")
         renderer = mujoco.Renderer(model, height=480, width=640)
         cam_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_CAMERA, "side")
-        streamer = LiveStreamer(port=args.port)
+        streamer = LiveStreamer(port=stream_port)
         streamer.start()
 
-        # Run the best trial and stream frames
         data = mujoco.MjData(model)
         dt = model.opt.timestep
-
-        # Reset scene
-        for jn, val in zip(joint_names, home):
-            jid = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, jn)
-            data.qpos[model.jnt_qposadr[jid]] = val
-        for i, val in enumerate(home):
-            data.ctrl[i] = val
-        data.ctrl[7] = 0.008
-        mujoco.mj_forward(model, data)
-
         ba = model.jnt_qposadr[ball_joint_id]
         bv = model.jnt_dofadr[ball_joint_id]
-        data.qpos[ba:ba + 3] = data.xpos[plate_id] + [0, 0, 0.025]
-        data.qpos[ba + 3:ba + 7] = [1, 0, 0, 0]
-        data.qvel[bv:bv + 6] = 0
-        mujoco.mj_forward(model, data)
-
         fps = 30
         render_every = int(1.0 / (fps * dt))
-        prev_ex, prev_ey = 0.0, 0.0
         steps = int(10.0 / dt)
 
-        print(f"Streaming Kp={best[0]}, Kd={best[1]} for 10s...")
+        print(f"Streaming Kp={best[0]}, Kd={best[1]} (auto-reset loop)")
         print("Press Ctrl+C to stop.\n")
 
         try:
-            for step in range(steps):
-                mujoco.mj_step(model, data)
-
+            while True:
+                # Reset scene each iteration
+                for jn, val in zip(joint_names, home):
+                    jid = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, jn)
+                    data.qpos[model.jnt_qposadr[jid]] = val
                 for i, val in enumerate(home):
                     data.ctrl[i] = val
                 data.ctrl[7] = 0.008
+                mujoco.mj_forward(model, data)
 
-                brel = data.xpos[ball_id] - data.xpos[plate_id]
-                ex, ey = brel[0], brel[1]
-                dx = (ex - prev_ex) / dt
-                dy = (ey - prev_ey) / dt
+                data.qpos[ba:ba + 3] = data.xpos[plate_id] + [0, 0, 0.025]
+                data.qpos[ba + 3:ba + 7] = [1, 0, 0, 0]
+                data.qvel[bv:bv + 6] = 0
+                mujoco.mj_forward(model, data)
+                prev_ex, prev_ey = 0.0, 0.0
 
-                # j6(X)+j7(Y) with positive sign
-                data.ctrl[5] = home[5] + (best[0] * ex + best[1] * dx)  # joint6 for X
-                data.ctrl[6] = home[6] + (best[0] * ey + best[1] * dy)  # joint7 for Y
+                for step in range(steps):
+                    mujoco.mj_step(model, data)
 
-                prev_ex, prev_ey = ex, ey
+                    for i, val in enumerate(home):
+                        data.ctrl[i] = val
+                    data.ctrl[7] = 0.008
 
-                if np.any(np.isnan(data.xpos[ball_id])):
-                    break
-                if abs(ex) > 0.14 or abs(ey) > 0.14 or brel[2] < -0.02:
-                    break
+                    brel = data.xpos[ball_id] - data.xpos[plate_id]
+                    ex, ey = brel[0], brel[1]
+                    dx = (ex - prev_ex) / dt
+                    dy = (ey - prev_ey) / dt
 
-                if step % render_every == 0:
-                    renderer.update_scene(data, camera=cam_id)
-                    streamer.update(renderer.render())
+                    data.ctrl[5] = home[5] + (best[0] * ex + best[1] * dx)
+                    data.ctrl[6] = home[6] + (best[0] * ey + best[1] * dy)
+
+                    prev_ex, prev_ey = ex, ey
+
+                    if np.any(np.isnan(data.xpos[ball_id])):
+                        break
+                    if abs(ex) > 0.14 or abs(ey) > 0.14 or brel[2] < -0.02:
+                        break
+
+                    if step % render_every == 0:
+                        renderer.update_scene(data, camera=cam_id)
+                        streamer.update(renderer.render())
         except KeyboardInterrupt:
             print("\nStreaming stopped.")
         finally:

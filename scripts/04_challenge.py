@@ -15,6 +15,9 @@ import sys
 os.environ.setdefault("MUJOCO_GL", "egl")
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+_script_dir = os.path.dirname(os.path.abspath(__file__))
+_project_root = os.path.dirname(_script_dir)
+
 import argparse
 import mujoco
 import numpy as np
@@ -59,18 +62,19 @@ parser.add_argument("--force", type=float, default=1.0,
                     help="Impulse force magnitude for Level 2 (default: 1.0N)")
 parser.add_argument("--freq", type=float, default=0.5,
                     help="Oscillation frequency for Level 3/4 (default: 0.5 Hz)")
-parser.add_argument("--port", type=int, default=18080,
-                    help="Streaming port (default: 18080)")
+parser.add_argument("--port", type=int, default=None,
+                    help="Streaming port (default: STREAM_PORT env var or 18080)")
 parser.add_argument("--no-stream", action="store_true",
                     help="Disable live streaming; save .mp4 instead")
 args = parser.parse_args()
+stream_port = args.port if args.port is not None else int(os.environ.get("STREAM_PORT", 18080))
 
 KP = args.kp
 KI = 0.0
 KD = args.kd
 
 # --- Setup ---
-model = mujoco.MjModel.from_xml_path("content/panda_ball_balance.xml")
+model = mujoco.MjModel.from_xml_path(os.path.join(_project_root, "content", "panda_ball_balance.xml"))
 data = mujoco.MjData(model)
 dt = model.opt.timestep  # 0.005s = 200 Hz
 
@@ -295,11 +299,11 @@ if args.no_stream or not HAS_STREAMER:
 # Streaming mode: live MJPEG with auto-reset loop
 # ============================================================
 else:
-    print(f"Starting live stream on port {args.port}...")
+    print(f"Starting live stream on port {stream_port}...")
     level_header(args.level)
     print(f"Press Ctrl+C to stop.\n")
 
-    streamer = LiveStreamer(port=args.port)
+    streamer = LiveStreamer(port=stream_port)
     streamer.start()
     fps = 30
     render_every = int(1.0 / (fps * dt))

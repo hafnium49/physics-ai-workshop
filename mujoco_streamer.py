@@ -163,7 +163,12 @@ class LiveStreamer:
             def log_message(self, format, *args):
                 return
 
-        self._server = _StreamingServer(("0.0.0.0", self._port), _MJPEGHandler)
+        try:
+            self._server = _StreamingServer(("0.0.0.0", self._port), _MJPEGHandler)
+        except OSError:
+            print(f"\nERROR: Port {self._port} already in use.")
+            print("Stop the other script first (Ctrl+C), then re-run this script.")
+            raise SystemExit(1)
         self._server_thread = threading.Thread(
             target=self._server.serve_forever, daemon=True
         )

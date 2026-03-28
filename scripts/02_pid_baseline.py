@@ -13,6 +13,9 @@ import sys
 os.environ.setdefault("MUJOCO_GL", "egl")
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+_script_dir = os.path.dirname(os.path.abspath(__file__))
+_project_root = os.path.dirname(_script_dir)
+
 import argparse
 import mujoco
 import numpy as np
@@ -49,20 +52,21 @@ class PIDController:
 parser = argparse.ArgumentParser(description="PID baseline for ball-on-plate balancing")
 parser.add_argument("--no-stream", action="store_true",
                     help="Disable live streaming; save .mp4 instead")
-parser.add_argument("--port", type=int, default=18080,
-                    help="Streaming port (default: 18080)")
+parser.add_argument("--port", type=int, default=None,
+                    help="Streaming port (default: STREAM_PORT env var or 18080)")
 parser.add_argument("--kp", type=float, default=50.0,
                     help="Proportional gain (default: 50.0)")
 parser.add_argument("--kd", type=float, default=10.0,
                     help="Derivative gain (default: 10.0)")
 args = parser.parse_args()
+stream_port = args.port if args.port is not None else int(os.environ.get("STREAM_PORT", 18080))
 
 KP = args.kp
 KI = 0.0
 KD = args.kd
 
 # --- Setup ---
-model = mujoco.MjModel.from_xml_path("content/panda_ball_balance.xml")
+model = mujoco.MjModel.from_xml_path(os.path.join(_project_root, "content", "panda_ball_balance.xml"))
 data = mujoco.MjData(model)
 dt = model.opt.timestep
 
@@ -255,11 +259,11 @@ if args.no_stream or not HAS_STREAMER:
 # Streaming mode: live MJPEG with auto-reset loop
 # ============================================================
 else:
-    print(f"Starting live stream on port {args.port}...")
+    print(f"Starting live stream on port {stream_port}...")
     print(f"PID gains: Kp={KP}, Ki={KI}, Kd={KD}")
     print(f"Press Ctrl+C to stop.\n")
 
-    streamer = LiveStreamer(port=args.port)
+    streamer = LiveStreamer(port=stream_port)
     streamer.start()
     fps = 30
     render_every = int(1.0 / (fps * dt))

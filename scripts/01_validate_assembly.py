@@ -17,6 +17,9 @@ import time
 import mujoco
 import numpy as np
 
+_script_dir = os.path.dirname(os.path.abspath(__file__))
+_project_root = os.path.dirname(_script_dir)
+
 # ---------------------------------------------------------------------------
 # Optional streamer import
 # ---------------------------------------------------------------------------
@@ -32,18 +35,20 @@ except ImportError:
 parser = argparse.ArgumentParser(description="Validate panda + ball-on-plate assembly")
 parser.add_argument("--no-stream", action="store_true",
                     help="Disable live streaming; save .mp4 instead")
-parser.add_argument("--port", type=int, default=18080,
-                    help="MJPEG streaming port (default: 18080)")
+parser.add_argument("--port", type=int, default=None,
+                    help="MJPEG streaming port (default: STREAM_PORT env or 18080)")
 parser.add_argument("--duration", type=float, default=3.0,
                     help="Video duration in seconds for .mp4 mode (default: 3.0)")
 args = parser.parse_args()
+
+stream_port = args.port if args.port is not None else int(os.environ.get("STREAM_PORT", 18080))
 
 use_stream = (not args.no_stream) and HAS_STREAMER
 
 # ---------------------------------------------------------------------------
 # Load model
 # ---------------------------------------------------------------------------
-model = mujoco.MjModel.from_xml_path("content/panda_ball_balance.xml")
+model = mujoco.MjModel.from_xml_path(os.path.join(_project_root, "content", "panda_ball_balance.xml"))
 data = mujoco.MjData(model)
 
 # Body IDs
@@ -58,34 +63,32 @@ joint_addrs = [model.jnt_qposadr[jid] for jid in joint_ids]
 # Home pose: j5, j6, j7 adjusted for plate grip orientation
 home = [0.0, -0.785, 0.0, -2.356, 1.184, 3.184, 1.158]
 
-# Set arm to home pose
-for addr, val in zip(joint_addrs, home):
-    data.qpos[addr] = val
-
-# Set actuator controls to hold home pose
-for i, val in enumerate(home):
-    data.ctrl[i] = val
-# Close gripper
-data.ctrl[7] = 0.008
-
-# Forward pass to compute plate world position
-mujoco.mj_forward(model, data)
-
-# Place ball on plate: plate position + 0.025m above surface
-plate_pos = data.xpos[plate_id].copy()
 ball_qpos_addr = model.jnt_qposadr[
     mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, "ball_free")
 ]
-# Free joint qpos: [x, y, z, qw, qx, qy, qz]
-data.qpos[ball_qpos_addr:ball_qpos_addr + 3] = plate_pos + [0, 0, 0.025]
-data.qpos[ball_qpos_addr + 3:ball_qpos_addr + 7] = [1, 0, 0, 0]  # identity quat
-# Zero ball velocity
 ball_qvel_addr = model.jnt_dofadr[
     mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, "ball_free")
 ]
-data.qvel[ball_qvel_addr:ball_qvel_addr + 6] = 0
 
-mujoco.mj_forward(model, data)
+
+def reset_scene():
+    """Set arm to home pose, place ball on plate, zero velocities."""
+    mujoco.mj_resetData(model, data)
+    for addr, val in zip(joint_addrs, home):
+        data.qpos[addr] = val
+    for i, val in enumerate(home):
+        data.ctrl[i] = val
+    data.ctrl[7] = 0.008
+    mujoco.mj_forward(model, data)
+
+    plate_pos = data.xpos[plate_id].copy()
+    data.qpos[ball_qpos_addr:ball_qpos_addr + 3] = plate_pos + [0, 0, 0.025]
+    data.qpos[ball_qpos_addr + 3:ball_qpos_addr + 7] = [1, 0, 0, 0]
+    data.qvel[ball_qvel_addr:ball_qvel_addr + 6] = 0
+    mujoco.mj_forward(model, data)
+
+
+reset_scene()
 
 print(f"Plate world pos: {data.xpos[plate_id]}")
 print(f"Ball world pos:  {data.xpos[ball_id]}")
@@ -122,36 +125,41 @@ def print_diagnostics(step):
 # ---------------------------------------------------------------------------
 if use_stream:
     # ---- Live MJPEG streaming mode ----
-    streamer = LiveStreamer(port=args.port)
+    streamer = LiveStreamer(port=stream_port)
     streamer.start()
-    print(f"\nLive stream started on http://localhost:{args.port}")
+    print(f"\nLive stream started on http://localhost:{stream_port}")
     print("Press Ctrl+C to stop.\n")
 
     step = 0
     diag_interval = int(1.0 / model.opt.timestep)  # every ~1 second
     try:
-        while True:
-            mujoco.mj_step(model, data)
+        while True:  # outer loop: recovery on NaN
+            while True:  # inner loop: simulation steps
+                mujoco.mj_step(model, data)
 
-            # Hold arm at home
-            for i, val in enumerate(home):
-                data.ctrl[i] = val
+                # Hold arm at home
+                for i, val in enumerate(home):
+                    data.ctrl[i] = val
 
-            # NaN check
-            if np.any(np.isnan(data.xpos[ball_id])):
-                print(f"ERROR: NaN detected at step {step}")
-                break
+                # NaN check — reset scene instead of exiting
+                if np.any(np.isnan(data.xpos[ball_id])):
+                    print(f"WARNING: NaN detected at step {step}, resetting scene...")
+                    break
 
-            # Render & push frame
-            if step % render_every == 0:
-                renderer.update_scene(data, camera=cam_id)
-                streamer.update(renderer.render())
+                # Render & push frame
+                if step % render_every == 0:
+                    renderer.update_scene(data, camera=cam_id)
+                    streamer.update(renderer.render())
 
-            # Diagnostics every second
-            if step % diag_interval == 0:
-                print_diagnostics(step)
+                # Diagnostics every second
+                if step % diag_interval == 0:
+                    print_diagnostics(step)
 
-            step += 1
+                step += 1
+
+            # Recover from NaN: reset and continue streaming
+            reset_scene()
+            step = 0
     except KeyboardInterrupt:
         print("\nStopping stream...")
     finally:
@@ -170,17 +178,21 @@ else:
     diag_interval = int(1.0 / model.opt.timestep)  # every ~1 second
     frames = []
 
-    for step in range(steps):
+    step = 0
+    while step < steps:
         mujoco.mj_step(model, data)
 
         # Hold arm at home
         for i, val in enumerate(home):
             data.ctrl[i] = val
 
-        # NaN check
+        # NaN check — reset scene instead of exiting
         if np.any(np.isnan(data.xpos[ball_id])):
-            print(f"ERROR: NaN detected at step {step}")
-            break
+            print(f"WARNING: NaN detected at step {step}, resetting scene...")
+            reset_scene()
+            step = 0
+            frames.clear()
+            continue
 
         # Render frame
         if step % render_every == 0:
@@ -190,6 +202,8 @@ else:
         # Diagnostics every second
         if step % diag_interval == 0:
             print_diagnostics(step)
+
+        step += 1
 
     # Final diagnostics
     ball_rel = data.xpos[ball_id] - data.xpos[plate_id]

@@ -137,7 +137,7 @@ def run_trial(joint_x_idx, joint_y_idx, sign, kp, kd, duration=10.0, render=Fals
 
 # --- Phase 1: Find the correct joint pairing ---
 print("=" * 60)
-print("Phase 1: Testing joint pairings (Kp=50, Kd=10)")
+print("Phase 1: Testing joint pairings (Kp=2, Kd=0)")
 print("=" * 60)
 
 # Pairings: (name, jx_ctrl_idx, jy_ctrl_idx)
@@ -152,7 +152,7 @@ pairings = [
 
 for name, jx, jy in pairings:
     for sign in [+1, -1]:
-        t = run_trial(jx, jy, sign, kp=50, kd=10, duration=5.0)
+        t = run_trial(jx, jy, sign, kp=2, kd=0, duration=5.0)
         marker = " <-- WORKS" if t >= 5.0 else ""
         print(f"  {name} sign={sign:+d} -> {t:.1f}s{marker}")
 
@@ -163,8 +163,8 @@ print("Phase 2: Gain search with j6(X)+j7(Y), sign=+1")
 print("=" * 60)
 
 results = []
-for kp in [5, 10, 20, 50, 100]:
-    for kd in [1, 5, 10, 20]:
+for kp in [1, 2, 3, 5, 10]:
+    for kd in [0, 1, 2, 5]:
         t = run_trial(5, 6, +1, kp, kd)
         results.append((kp, kd, t))
         marker = " ***" if t >= 10.0 else ""

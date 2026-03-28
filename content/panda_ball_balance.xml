@@ -173,6 +173,13 @@
     </body>
   </worldbody>
 
+  <contact>
+    <!-- Exclude plate-finger collisions so fingers can close near plate edge -->
+    <exclude body1="plate" body2="left_finger"/>
+    <exclude body1="plate" body2="right_finger"/>
+    <exclude body1="plate" body2="hand"/>
+  </contact>
+
   <equality>
     <joint joint1="finger_joint1" joint2="finger_joint2" solimp="0.95 0.99 0.001" solref="0.005 1"/>
     <!-- Weld holds plate rigid to hand; relpose updated at runtime by scripts -->

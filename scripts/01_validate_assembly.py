@@ -67,9 +67,7 @@ ball_qpos_addr = model.jnt_qposadr[ball_joint_id]
 ball_qvel_addr = model.jnt_dofadr[ball_joint_id]
 
 # Home pose: j6=1.8 (mid-range) to address asymmetric range [-0.0175, 3.7525]
-# j7=2.356 rotates the finger slide axis to vertical so fingers clamp
-# the plate edge (10mm thickness) from above and below.
-home = [0.0, -0.785, 0.0, -2.356, 0.0, 1.8, 2.356]
+home = [0.0, -0.785, 0.0, -2.356, 0.0, 1.8, 0.785]
 
 # ---------------------------------------------------------------------------
 # Phase 1: Set arm to home pose with gripper open
@@ -126,10 +124,7 @@ for i in range(model.neq):
         model.eq_data[i, 6:10] = rel_quat
         break
 
-finger_slide = hand_mat[:, 1].copy()
-print(f"Finger slide direction (world): {finger_slide}")
-
-data.ctrl[7] = 0.0  # Close gripper on plate edge
+data.ctrl[7] = 0.0  # Close gripper around plate edge
 print("Closing gripper on plate edge...")
 print(f"  Grip point (world): {grip_world}")
 print(f"  Plate center: {plate_center}")

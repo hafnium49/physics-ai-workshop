@@ -133,7 +133,7 @@ All 9 checks should print `[PASS]`. If any fail, fix the issue before proceeding
 2. Enter the workshop password.
 3. Open a new terminal in VS Code (`Ctrl + ~`).
 4. Verify the prompt shows `(workshop_env) engineer1@<hostname>`.
-5. Run: `claude -p "Load panda_ball_balance.xml and start a live stream on port 18081 using mujoco_streamer.py"`
+5. Run: `claude -p "Load panda_ball_balance.xml, set the arm to the home pose, place the ball on the plate, and start a live stream using mujoco_streamer.py"`
 6. Verify VS Code shows the port forwarding notification — click it and confirm you can see the live video in your browser.
 7. If Claude responds without asking for a login and the stream is visible, **your environments are perfectly provisioned.**
 
@@ -157,7 +157,7 @@ These are pre-built reference scripts that prove the pipeline works. **Participa
 
 If a participant's Claude Code session is stuck at Sprint 2 after 25 minutes and cannot discover the correct joints, the host can quietly offer this hint:
 
-> *"Try telling Claude: The plate barely moves when you control joint 7. Focus on joint 5 and joint 6 instead, and make sure the correction sign is positive."*
+> *"Try telling Claude: Focus on joint 6 and joint 7 for the PID control, and make sure the correction sign is positive. Use small gains like Kp=2."*
 
 If Sprint 2 is completely blocked, copy `04_challenge.py` into the participant's workspace as a working reference to unblock Sprint 3:
 

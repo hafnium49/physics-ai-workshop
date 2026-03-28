@@ -53,7 +53,7 @@ You're now talking to Claude Code. It already knows about the workshop, the robo
 
 ## What You Just Watched
 
-Before the workshop started, the host ran a live demo where Claude Code discovered — by itself — which joints control the plate. It tried the wrong joints, diagnosed the problem, switched to the right ones, and balanced the ball for 10 seconds. **Now it's your turn.**
+Before the workshop started, the host ran a live demo where Claude Code discovered — by itself — which joints control the plate tilt. It tried the wrong joints, diagnosed the problem, switched to the right ones, and balanced the ball for 10 seconds. **Now it's your turn.**
 
 ---
 
@@ -85,7 +85,7 @@ Watch the browser — you'll see the robot arm, the plate, and the ball rolling 
 
 Now tell Claude:
 
-> Stop the simulation. I want to understand the robot's joints. Write a new script that moves joint 5 slowly back and forth by 0.1 radians while streaming live. Then do the same for joint 6 and joint 7, one at a time. Tell me what each joint does to the plate.
+> Stop the simulation. I want to understand the robot's joints. Write a new script that moves joint 6 slowly back and forth by 0.1 radians while streaming live. Then do the same for joint 7 and joint 5, one at a time. Tell me what each joint does to the plate.
 
 Watch each joint move. Notice which ones tilt the plate and which ones barely do anything. **This matters for the next sprint.**
 
@@ -117,7 +117,7 @@ Once the ball stays on for 10 seconds:
 
 > Great! The ball is balancing. Can you explain which joints you're controlling and why? What did you change from the first attempt?
 
-This is the key insight: **which joints to control matters more than the gain values.**
+This is the key insight: **which joints to control and the sign of the correction matter more than the gain values.**
 
 ---
 

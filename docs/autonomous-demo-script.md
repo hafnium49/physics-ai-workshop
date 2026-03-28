@@ -40,7 +40,7 @@ Press Ctrl+C to stop the simulation, then paste:
 
 **What happens:** Claude writes a PID controller. It will likely pick joints that don't work well. Ball falls off in under 2 seconds.
 
-**Narrate:** *"The AI wrote a controller, but the ball still falls off. The AI picked the wrong joints. Watch what happens when we ask it to investigate."*
+**Narrate:** *"The AI wrote a controller, but the ball still falls off. The correction sign is wrong. Watch what happens when we ask it to investigate."*
 
 ---
 
@@ -52,7 +52,7 @@ Paste:
 
 **What happens:** Claude runs a joint authority analysis. It discovers that some joints have strong plate control and others have almost none.
 
-**Narrate:** *"The AI just discovered — by itself — which joints actually matter. This is the 'Autonomous Scientist' at work."*
+**Narrate:** *"The AI just discovered — by itself — which joints matter and that the correction sign was wrong. This is the 'Autonomous Scientist' at work."*
 
 ---
 
@@ -60,11 +60,11 @@ Paste:
 
 Paste:
 
-> Switch to the joints with the most plate authority and use a positive correction sign. Try again.
+> Fix the correction sign and use the joints with the most plate authority. Try again.
 
 **What happens:** Ball balances for 10 seconds. The stream shows the ball sitting steadily on the plate.
 
-**Narrate:** *"Ten seconds. The AI found the right control architecture through trial and error. That's what you'll be doing in the next hour — but YOU decide what to try."*
+**Narrate:** *"Ten seconds. The AI found the right correction sign and control joints through trial and error. That's what you'll be doing in the next hour — but YOU decide what to try."*
 
 ---
 

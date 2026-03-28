@@ -16,7 +16,7 @@ Build and validate the full demo pipeline for the Physics-AI workshop. Material 
 
 - Plate rigidly nested inside `<body name="hand">`, ball as top-level free body
 - Scripts reposition ball onto plate after `mj_forward`
-- Without PID: ball off in ~1.3s. With correct PID: any Kp/Kd hits 10s.
+- Without PID: ball off in ~1s. With correct PID (Kp=2, joint6+joint7): hits 10s.
 
 ---
 
@@ -95,9 +95,8 @@ Each level visually distinct on the live stream. Terminal prints current level, 
 **Critical bug found and fixed:** Axis mapping was swapped — `(jx=4, jy=5)` mapped joint5→X, joint6→Y which is backwards. Correct mapping: `(jx=5, jy=4)` = joint6(ctrl[5])→X, joint5(ctrl[4])→Y.
 
 Validation results (dry run, no video):
-- Phase 1: `j6(X)+j5(Y) sign=+1` → 5.0s (WORKS). Swapped axes and wrong signs fail.
-- Phase 1: `j6(X)+j7(Y) sign=+1` → 5.0s (also works — j7 has no Y authority but Y drift is minimal)
-- Phase 2: ALL 20 Kp/Kd combos with correct pairing hit 10.0s
+- Phase 1: `j6(X)+j7(Y) sign=+1` → 10.0s (WORKS). Wrong signs fail at ~1.2s.
+- Phase 2: Correct pairing with Kp=2, Kd=0 hits 10.0s
 
 ---
 
@@ -129,9 +128,10 @@ Validation results (dry run, no video):
 |----------|--------|--------|
 | Plate attachment | Rigid kinematic (child of `hand`) | DONE; eliminates weld wobble |
 | Ball placement | Top-level free body, repositioned in script | MuJoCo free joint constraint |
-| PID joints | joint5 (Y) + joint6 (X) | Empirically verified; j7 ≈ zero authority |
+| PID joints | joint6 (X) + joint7 (Y) | Empirically verified at rotated-plate pose |
 | PID sign | Positive (+) | Empirically verified |
-| Joint6 home | 1.8 rad (mid-range) | Asymmetric range [-0.0175, 3.7525] |
+| PID gains | Kp=2, Kd=0 | Low gains sufficient due to plate geometry |
+| Home pose (wrist) | j5=1.184, j6=3.184, j7=1.158 | Plate horizontal with edge gripped by fingers |
 | Visualization | MJPEG stream via Pillow + http.server | Zero new deps; VS Code auto-forwards |
 | JPEG encoding | Pillow (not opencv) | Already installed via mediapy |
 | Port allocation | 18081-18085 per user | Avoid collision on shared machine |
@@ -174,12 +174,12 @@ Results:
 [PASS] mediapy import
 [PASS] Correct PID survival (10.0s)
 [PASS] Wrong PID fails (0.8s < 2.0s)
-[PASS] Joint authority (j5=0.0018, j6=0.0018, j7=0.0001)
+[PASS] Joint authority (j5=0.0004, j6=0.0032, j7=0.0000)
 [PASS] EGL rendering (480x640x3)
 ALL CHECKS PASSED
 ```
 
-Confirmed: CLAUDE.md does NOT reveal correct joint pairing or sign (physics-only hints).
+Confirmed: CLAUDE.md does NOT reveal correct joint pairing, sign, or gains (physics-only hints).
 
 ---
 

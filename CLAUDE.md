@@ -63,11 +63,11 @@ Fall back to `mediapy.write_video()` only if streaming is unavailable.
 ## Ball-on-Plate Balancing Task
 
 The pre-assembled model `panda_ball_balance.xml` has:
-- Plate rigidly attached inside the `hand` body, offset so one edge is gripped by the fingers (`ctrl[7]=0.008`). The plate extends outward from the grip point.
+- Plate rotated 90° and positioned so the gripper fingers clamp its edge (`ctrl[7]=0.008`). The plate extends horizontally outward from the grip point.
 - Ball as a top-level free body — must be repositioned onto the plate in scripts
 
 **Important physics notes:**
-- The plate is rigidly attached to the end-effector. To tilt the plate, identify which joints produce wrist rotation. Not all joints contribute equally to plate orientation.
+- The plate is rigidly attached to the end-effector and extends outward from the grip. To tilt the plate, identify which wrist joints produce rotation in the plate plane. Not all joints contribute equally to plate orientation.
 - The ball has a free joint and can roll/fall off the plate.
 - Use `data.xpos[ball_id] - data.xpos[plate_id]` to track ball position relative to plate.
 - Print `Survival Time: X.X seconds` to terminal for optimization tracking.
@@ -91,14 +91,14 @@ When writing a PID controller for the first time, do not run a systematic joint 
 ### Franka Panda (`content/franka_panda/`)
 - `panda.xml` — 7-DOF arm from MuJoCo Menagerie. Kinematic chain: `link0` -> `link1` ... -> `link7` -> `hand` -> `left_finger`/`right_finger`
 - `scene.xml` — Includes `panda.xml` plus ground plane, lighting, skybox. Uses `timestep="0.005"` with `implicitfast` integrator.
-- **End-effector attachment point:** The `hand` body (child of `link7`) has a site named `gripper` at `pos="0 0 0.1"` — attach the plate here.
+- **End-effector attachment point:** The `hand` body (child of `link7`) has a site named `gripper` at `pos="0 0 0.1"`. In `panda_ball_balance.xml`, the plate is rotated 90° and positioned so the fingers grip its edge.
 - **Actuators:** 7 position-controlled joints (`actuator1`-`actuator7`) + 1 gripper actuator (`actuator8`). Joints use built-in PD control with `kp` and `kv` gains already set.
 - **Joint names:** `joint1`-`joint7` (arm), `finger_joint1`/`finger_joint2` (gripper, coupled via equality constraint)
 
 ### Ball and Plate (`content/ball_and_plate.xml`)
 - `plate` body: box geom `0.15 x 0.15 x 0.005`, mass 0.5 kg
 - `ball` body: sphere radius 0.02, mass 0.1 kg, has a `free` joint (`ball_free`) — 6-DOF unconstrained motion
-- To assemble: nest the plate/ball bodies inside the Panda's `hand` body (or weld to `gripper` site) rather than using `<include>`, since ball_and_plate.xml is a standalone fragment
+- To assemble: nest the plate body inside the Panda's `hand` body with a 90° rotation (`quat="0.7071 0.7071 0 0"`) so the fingers grip the plate edge. ball_and_plate.xml is a standalone fragment — do not use `<include>`.
 
 ## MuJoCo Quick Reference
 

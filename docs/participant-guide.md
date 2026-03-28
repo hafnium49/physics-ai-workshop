@@ -63,6 +63,8 @@ Since we're working over SSH, there are no graphical windows. Instead, your simu
 
 When Claude runs a simulation script, you'll see a pop-up in the bottom-right corner of VS Code saying something like *"Your application running on port 18081 is available."* Click **"Open in Browser"** to watch the robot simulation in real time.
 
+The browser view is **interactive** — you can drag to rotate the view, scroll to zoom in/out, and right-drag to pan. Press **R** to reset the camera to the default angle. This works while the simulation is running.
+
 If you miss the pop-up, go to the **Ports** tab at the bottom of VS Code and click the globe icon next to the port number.
 
 ---

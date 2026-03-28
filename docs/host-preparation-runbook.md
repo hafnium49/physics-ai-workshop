@@ -62,10 +62,11 @@ for i in {1..5}; do
     echo "export STREAM_PORT=1808$i" | sudo tee -a /home/engineer$i/.bashrc > /dev/null
     echo "export MUJOCO_GL=egl" | sudo tee -a /home/engineer$i/.bashrc > /dev/null
 
-    # 8. Copy CLAUDE.md and Claude Code settings into workspace
+    # 8. Copy CLAUDE.md, Claude Code settings, and skills into workspace
     sudo cp /path/to/physics-ai-workshop/CLAUDE.md /home/engineer$i/physics_sim/
     sudo mkdir -p /home/engineer$i/physics_sim/.claude
     sudo cp /path/to/physics-ai-workshop/.claude/settings.json /home/engineer$i/physics_sim/.claude/
+    sudo cp -r /path/to/physics-ai-workshop/.claude/skills /home/engineer$i/physics_sim/.claude/skills/
 
     # 9. Fix ownership before git init (git init must run as the user)
     sudo chown -R engineer$i:workshop /home/engineer$i/physics_sim/

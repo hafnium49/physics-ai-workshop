@@ -67,7 +67,9 @@ ball_qpos_addr = model.jnt_qposadr[ball_joint_id]
 ball_qvel_addr = model.jnt_dofadr[ball_joint_id]
 
 # Home pose: j6=1.8 (mid-range) to address asymmetric range [-0.0175, 3.7525]
-home = [0.0, -0.785, 0.0, -2.356, 0.0, 1.8, 0.785]
+# j7=2.356 rotates the finger slide axis to vertical so fingers clamp
+# the plate edge (10mm thickness) from above and below.
+home = [0.0, -0.785, 0.0, -2.356, 0.0, 1.8, 2.356]
 
 # ---------------------------------------------------------------------------
 # Phase 1: Set arm to home pose with gripper open
@@ -80,68 +82,68 @@ data.ctrl[7] = 0.04  # Open gripper
 mujoco.mj_forward(model, data)
 
 # ---------------------------------------------------------------------------
-# Phase 2: Position plate edge between gripper fingers
+# Phase 2: Position plate edge between gripper fingers (horizontal plate)
 # ---------------------------------------------------------------------------
 hand_pos = data.xpos[hand_id].copy()
 hand_mat = data.xmat[hand_id].reshape(3, 3)
+hand_quat = data.xquat[hand_id].copy()
 
 # Finger pads are at approximately (0, 0, 0.104) in hand frame
 grip_local = np.array([0.0, 0.0, 0.104])
 grip_world = hand_pos + hand_mat @ grip_local
 
-# Finger slide direction in world frame (hand local Y axis)
-finger_slide = hand_mat[:, 1].copy()
-finger_slide /= np.linalg.norm(finger_slide)
+# Hand approach direction projected to horizontal (plate extends this way)
+hand_approach = hand_mat[:, 2].copy()  # hand Z = approach direction
+hand_approach_horiz = hand_approach.copy()
+hand_approach_horiz[2] = 0.0
+hand_approach_horiz /= np.linalg.norm(hand_approach_horiz)
 
-# Orient plate so its Z axis (thin dimension) aligns with finger slide,
-# ensuring the fingers close on the 10mm plate thickness.
-plate_z = finger_slide
+# Plate is horizontal, center offset from grip by half-width along approach dir
+plate_center = grip_world + hand_approach_horiz * 0.15
+plate_center[2] = grip_world[2]  # keep at grip height
+plate_quat = np.array([1.0, 0.0, 0.0, 0.0])  # horizontal (identity)
 
-# Plate X = direction plate extends from grip edge (hand X, orthogonalized)
-hand_x = hand_mat[:, 0].copy()
-plate_x = hand_x - np.dot(hand_x, plate_z) * plate_z
-plate_x /= np.linalg.norm(plate_x)
-
-# Plate Y completes right-hand frame
-plate_y = np.cross(plate_z, plate_x)
-
-# Convert rotation matrix to quaternion
-R_plate = np.column_stack([plate_x, plate_y, plate_z])
-plate_quat = np.zeros(4)
-mujoco.mju_mat2Quat(plate_quat, R_plate.flatten())
-
-# Place plate center offset from grip by half plate width (0.15m) along plate X
-plate_center = grip_world + plate_x * 0.15
-
-# Set plate free joint position and orientation
+# Set plate free joint
 data.qpos[plate_qpos_addr:plate_qpos_addr + 3] = plate_center
 data.qpos[plate_qpos_addr + 3:plate_qpos_addr + 7] = plate_quat
 data.qvel[plate_qvel_addr:plate_qvel_addr + 6] = 0
 mujoco.mj_forward(model, data)
 
-print(f"Finger slide direction (world): {finger_slide}")
-print(f"Plate orientation (quat): {plate_quat}")
-print(f"Plate center: {plate_center}")
+# ---------------------------------------------------------------------------
+# Phase 3: Update weld constraint relpose, then close gripper and settle
+# ---------------------------------------------------------------------------
+# Compute desired relative pose of plate in hand frame
+rel_pos = hand_mat.T @ (plate_center - hand_pos)
+hand_quat_inv = np.zeros(4)
+mujoco.mju_negQuat(hand_quat_inv, hand_quat)
+rel_quat = np.zeros(4)
+mujoco.mju_mulQuat(rel_quat, hand_quat_inv, plate_quat)
 
-# ---------------------------------------------------------------------------
-# Phase 3: Close gripper on plate edge and settle
-# ---------------------------------------------------------------------------
+# Find and update the weld constraint (eq_type 1 = mjEQ_WELD)
+for i in range(model.neq):
+    if model.eq_type[i] == mujoco.mjtEq.mjEQ_WELD:
+        model.eq_data[i, 3:6] = rel_pos
+        model.eq_data[i, 6:10] = rel_quat
+        break
+
+finger_slide = hand_mat[:, 1].copy()
+print(f"Finger slide direction (world): {finger_slide}")
+
 data.ctrl[7] = 0.0  # Close gripper on plate edge
 print("Closing gripper on plate edge...")
+print(f"  Grip point (world): {grip_world}")
+print(f"  Plate center: {plate_center}")
+
 for _ in range(400):  # 2 seconds settling at 200 Hz
     mujoco.mj_step(model, data)
 
-print(f"Plate position after grip: {data.xpos[plate_id]}")
+print(f"  Plate position after grip: {data.xpos[plate_id]}")
 
 # ---------------------------------------------------------------------------
 # Phase 4: Place ball on plate
 # ---------------------------------------------------------------------------
 plate_pos = data.xpos[plate_id].copy()
-# Ball goes above the plate surface (plate Z direction, offset by 0.025m)
-plate_mat_after = data.xmat[plate_id].reshape(3, 3)
-plate_up = plate_mat_after[:, 2]  # plate surface normal
-ball_pos = plate_pos + plate_up * 0.025
-data.qpos[ball_qpos_addr:ball_qpos_addr + 3] = ball_pos
+data.qpos[ball_qpos_addr:ball_qpos_addr + 3] = plate_pos + [0, 0, 0.025]
 data.qpos[ball_qpos_addr + 3:ball_qpos_addr + 7] = [1, 0, 0, 0]
 data.qvel[ball_qvel_addr:ball_qvel_addr + 6] = 0
 mujoco.mj_forward(model, data)

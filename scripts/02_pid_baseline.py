@@ -95,7 +95,7 @@ def reset_scene(m, d):
         d.qpos[m.jnt_qposadr[jid]] = val
     for i, val in enumerate(home):
         d.ctrl[i] = val
-    d.ctrl[7] = 0.04  # close gripper
+    d.ctrl[7] = 0.008  # close gripper
     mujoco.mj_forward(m, d)
 
     # Place ball on plate
@@ -164,7 +164,7 @@ def run_simulation_step(d, pid_x, pid_y):
     # Hold non-PID joints at home
     for i in [0, 1, 2, 3, 4]:  # joint1-5
         d.ctrl[i] = home[i]
-    d.ctrl[7] = 0.04  # gripper
+    d.ctrl[7] = 0.008  # gripper
 
     # Sense: ball position relative to plate in world frame
     ball_rel_world = d.xpos[ball_id] - d.xpos[plate_id]

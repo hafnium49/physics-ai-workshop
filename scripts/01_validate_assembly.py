@@ -66,7 +66,7 @@ for addr, val in zip(joint_addrs, home):
 for i, val in enumerate(home):
     data.ctrl[i] = val
 # Close gripper
-data.ctrl[7] = 0.04
+data.ctrl[7] = 0.008
 
 # Forward pass to compute plate world position
 mujoco.mj_forward(model, data)

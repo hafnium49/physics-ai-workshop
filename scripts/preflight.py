@@ -60,7 +60,7 @@ def _reset_scene(model, data):
         data.qpos[model.jnt_qposadr[jid]] = val
     for i, val in enumerate(HOME_POSE):
         data.ctrl[i] = val
-    data.ctrl[7] = 0.04
+    data.ctrl[7] = 0.008
     mujoco.mj_forward(model, data)
 
     plate_pos = data.xpos[plate_id]
@@ -134,7 +134,7 @@ def check_5_correct_pid():
         mujoco.mj_step(model, data)
         for i, val in enumerate(HOME_POSE):
             data.ctrl[i] = val
-        data.ctrl[7] = 0.04
+        data.ctrl[7] = 0.008
 
         brel = data.xpos[ball_id] - data.xpos[plate_id]
         ex, ey = brel[0], brel[1]
@@ -169,7 +169,7 @@ def check_6_wrong_pid():
         mujoco.mj_step(model, data)
         for i, val in enumerate(HOME_POSE):
             data.ctrl[i] = val
-        data.ctrl[7] = 0.04
+        data.ctrl[7] = 0.008
 
         brel = data.xpos[ball_id] - data.xpos[plate_id]
         ex, ey = brel[0], brel[1]

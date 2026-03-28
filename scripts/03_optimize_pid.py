@@ -74,7 +74,7 @@ def run_trial(joint_x_idx, joint_y_idx, sign, kp, kd, duration=10.0, render=Fals
         data.qpos[model.jnt_qposadr[jid]] = val
     for i, val in enumerate(home):
         data.ctrl[i] = val
-    data.ctrl[7] = 0.04
+    data.ctrl[7] = 0.008
     mujoco.mj_forward(model, data)
 
     # Place ball on plate
@@ -103,7 +103,7 @@ def run_trial(joint_x_idx, joint_y_idx, sign, kp, kd, duration=10.0, render=Fals
         # Hold all joints at home
         for i, val in enumerate(home):
             data.ctrl[i] = val
-        data.ctrl[7] = 0.04
+        data.ctrl[7] = 0.008
 
         # Ball error
         brel = data.xpos[ball_id] - data.xpos[plate_id]
@@ -197,7 +197,7 @@ else:
             data.qpos[model.jnt_qposadr[jid]] = val
         for i, val in enumerate(home):
             data.ctrl[i] = val
-        data.ctrl[7] = 0.04
+        data.ctrl[7] = 0.008
         mujoco.mj_forward(model, data)
 
         ba = model.jnt_qposadr[ball_joint_id]
@@ -221,7 +221,7 @@ else:
 
                 for i, val in enumerate(home):
                     data.ctrl[i] = val
-                data.ctrl[7] = 0.04
+                data.ctrl[7] = 0.008
 
                 brel = data.xpos[ball_id] - data.xpos[plate_id]
                 ex, ey = brel[0], brel[1]

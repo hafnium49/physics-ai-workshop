@@ -103,7 +103,7 @@ def reset_scene(m, d):
         d.qpos[m.jnt_qposadr[jid]] = val
     for i, val in enumerate(home):
         d.ctrl[i] = val
-    d.ctrl[7] = 0.04  # close gripper
+    d.ctrl[7] = 0.008  # close gripper
     mujoco.mj_forward(m, d)
 
     # Place ball on plate
@@ -220,7 +220,7 @@ def run_one_attempt(level, rng, max_duration=None):
         for i in [0, 1, 2, 3]:  # joint1-4
             data.ctrl[i] = home[i]
         data.ctrl[6] = home[6]  # joint7
-        data.ctrl[7] = 0.04  # gripper
+        data.ctrl[7] = 0.008  # gripper
 
         # Sense: ball position relative to plate
         ball_rel_world = data.xpos[ball_id] - data.xpos[plate_id]
@@ -376,7 +376,7 @@ else:
                 for i in [0, 1, 2, 3]:
                     data.ctrl[i] = home[i]
                 data.ctrl[6] = home[6]
-                data.ctrl[7] = 0.04
+                data.ctrl[7] = 0.008
 
                 # Sense
                 ball_rel_world = data.xpos[ball_id] - data.xpos[plate_id]

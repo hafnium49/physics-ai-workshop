@@ -20,7 +20,7 @@ This is a 1-hour hands-on workshop where material engineers (not software develo
 - `content/franka_panda/panda.xml` — 7-DOF arm from MuJoCo Menagerie
 - `content/franka_panda/scene.xml` — Panda with default scene (ground plane, lighting)
 - `content/ball_and_plate.xml` — Flat plate + ball with free joint (standalone fragment)
-- `content/panda_ball_balance.xml` — Pre-assembled Panda arm with plate attached to end-effector and ball (free body). Ready for PID balancing task.
+- `content/panda_ball_balance.xml` — Pre-assembled Panda arm gripping a plate (with ball as free body). Ready for PID balancing task.
 
 ## Constraints
 
@@ -63,7 +63,7 @@ Fall back to `mediapy.write_video()` only if streaming is unavailable.
 ## Ball-on-Plate Balancing Task
 
 The pre-assembled model `panda_ball_balance.xml` has:
-- Plate rigidly attached inside the `hand` body at the end-effector
+- Plate rigidly attached inside the `hand` body at the end-effector, with a stem gripped by the fingers (set gripper to `ctrl[7]=0.008`)
 - Ball as a top-level free body — must be repositioned onto the plate in scripts
 
 **Important physics notes:**

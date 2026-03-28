@@ -304,6 +304,27 @@ else:
                     streamer.update(renderer.render())
 
             print(f"Survival Time: {survival_time:.1f} seconds")
+
+            # Let ball fall to the floor before resetting
+            if not nan_detected:
+                max_fall = int(3.0 / dt)
+                settle = int(0.5 / dt)
+                landed_at = None
+                for fall_step in range(max_fall):
+                    mujoco.mj_step(model, data)
+                    for i in range(7):
+                        data.ctrl[i] = home[i]
+                    data.ctrl[7] = 0.008
+                    if fall_step % render_every == 0:
+                        renderer.update_scene(data, camera=cam_id)
+                        streamer.update(renderer.render())
+                    ball_z = data.xpos[ball_id][2]
+                    if landed_at is None and ball_z < 0.05:
+                        landed_at = fall_step
+                    if landed_at is not None and (fall_step - landed_at) >= settle:
+                        break
+                    if np.any(np.isnan(data.xpos[ball_id])):
+                        break
             print()
 
     except KeyboardInterrupt:

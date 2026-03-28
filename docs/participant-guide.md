@@ -167,6 +167,7 @@ Feel free to ask Claude anything along the way:
 - **If something breaks,** tell Claude: *"That didn't work. Here's the error:"* and paste the error message.
 - **Be specific.** Instead of *"make it better,"* try *"increase Kp to 100 and decrease Kd to 5."*
 - **Ctrl+C stops the simulation.** If you want to try something new, press `Ctrl+C` in the terminal to stop the current script.
+- **If you see "Port already in use",** it means a previous script is still running. Press `Ctrl+C` in that terminal first.
 
 ---
 
@@ -179,4 +180,5 @@ Feel free to ask Claude anything along the way:
 | Claude is not responding | Press `Ctrl+C` to cancel, then type `claude` to restart |
 | Can't see the live video | Click the port forwarding popup in VS Code, or go to the Ports tab and click the globe icon |
 | Video shows but is frozen | Tell Claude: "Restart the live stream" |
+| "Port already in use" error | Another script is still running. Press `Ctrl+C` in the other terminal first, then retry |
 | `(workshop_env)` not showing | Run: `source ~/workshop_env/bin/activate` |

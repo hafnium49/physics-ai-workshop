@@ -147,11 +147,11 @@ These are pre-built reference scripts that prove the pipeline works. **Participa
 |--------|--------|---------|---------|
 | `preflight.py` | Pre-workshop (host only) | Validates model, streamer, PID, rendering | `MUJOCO_GL=egl python scripts/preflight.py` |
 | `01_validate_assembly.py` | Sprint 1: Explore | Load model, stream live, see robot + ball | `python scripts/01_validate_assembly.py` |
-| `02_pid_baseline.py` | Sprint 2: PID Discovery | Deliberately wrong PID baseline (0.8s survival) | `python scripts/02_pid_baseline.py --kp 50 --kd 10` |
+| `02_pid_baseline.py` | Sprint 2: PID Discovery | Deliberately wrong PID baseline (~0.3s survival) | `python scripts/02_pid_baseline.py --kp 50 --kd 10` |
 | `03_optimize_pid.py` | Sprint 2: PID Discovery | Grid search proving correct joints exist (host validation) | `python scripts/03_optimize_pid.py --no-render` |
-| `04_challenge.py` | Sprint 3: Challenges | Progressive disturbances: impulses, oscillation, speed record | `python scripts/04_challenge.py --level 2 --kp 50 --kd 10` |
+| `04_challenge.py` | Sprint 3: Challenges | Progressive disturbances: impulses, oscillation, speed record | `python scripts/04_challenge.py --level 2 --kp 2 --kd 0` |
 
-> All scripts support `--no-stream` (saves .mp4 fallback) and `--port` (default 18080).
+> All scripts support `--no-stream` (saves .mp4 fallback) and `--port` (default: `STREAM_PORT` env var or 18080). Scripts resolve model paths relative to their own location, so they work from any working directory.
 
 ### "Break glass" fallback
 

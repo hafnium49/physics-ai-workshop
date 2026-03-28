@@ -8,6 +8,8 @@ Build and validate the full demo pipeline for the Physics-AI workshop. Material 
 
 **Key physics finding:** With position actuators, PID gain tuning is trivially easy once the correct joints (j5+j6) and sign (+) are found. Static balancing alone won't fill 30 minutes. **Solution: progressive disturbance challenges** restore the difficulty curve.
 
+**Robustness hardening:** All scripts resolve model paths relative to script location (not cwd), read streaming port from `STREAM_PORT` env var (not hardcoded 18080), handle port conflicts with friendly error messages, and recover from NaN without killing the stream.
+
 ---
 
 ## Step 1: Create the combined world XML — DONE
@@ -44,6 +46,7 @@ Implementation details:
 - Bind `0.0.0.0` for VS Code port detection
 - **Per-user ports:** default `port=18080`, but host runbook assigns 18081-18085 per user to avoid collision on shared machine
 - `.stop()` method: sets `_running=False`, wakes all waiters, calls `server.shutdown()`
+- Port conflict: `start()` catches `OSError` and prints friendly "Port N already in use" message instead of raw traceback
 - Docstring warns: render on sim thread only (OpenGL context is not thread-safe)
 
 **All scripts get `--no-stream` fallback:** try/except import, falls back to mediapy .mp4 output.
@@ -69,7 +72,8 @@ Implementation details:
 - `while True` loop with auto-reset on ball fall (reposition ball, restart timer)
 - Keep `Survival Time: X.X seconds` terminal output (Claude reads this)
 - **Add per-joint authority diagnostics** on each reset: "joint7 correction = 0.05 rad → plate tilt change = 0.001 rad" — gives Claude data to reason from, prevents gain-tuning dead-end spiral
-- Deliberate baseline: wrong joints (j6+j7) + wrong sign → 0.8s survival
+- Deliberate baseline: correct joints (j6+j7) but wrong sign → ~0.3s survival
+- Ball fall animation: after ball leaves plate, simulation continues until ball hits floor (~0.4s fall + 0.5s settle) before auto-reset
 
 ---
 
@@ -152,6 +156,7 @@ Validation results (dry run, no video):
 7. ~~Pre-flight sanity check~~ DONE
 8. ~~Workshop agent system~~ DONE (simplified from 3-review consensus)
 9. ~~Port migration 8080→18080~~ DONE (all 11 files, preflight passes)
+10. ~~Robustness hardening~~ DONE (model paths, port env var, NaN recovery, auto-reset loops, port conflict error)
 
 ---
 

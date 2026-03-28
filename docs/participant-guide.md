@@ -170,6 +170,7 @@ Feel free to ask Claude anything along the way:
 - **Be specific.** Instead of *"make it better,"* try *"increase Kp to 100 and decrease Kd to 5."*
 - **Ctrl+C stops the simulation.** If you want to try something new, press `Ctrl+C` in the terminal to stop the current script.
 - **If you see "Port already in use",** it means a previous script is still running. Press `Ctrl+C` in that terminal first.
+- **Rotate the camera** by left-dragging in the browser. Scroll to zoom, right-drag to pan. Press R to reset the view.
 
 ---
 

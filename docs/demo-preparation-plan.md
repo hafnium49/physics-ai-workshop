@@ -42,6 +42,8 @@ Implementation details:
 - `daemon_threads = True` on server
 - HTML page at `/` with auto-reconnect JS (handles backgrounded tabs)
 - FPS counter + connection status dot in the HTML overlay
+- Interactive camera: left-drag orbit, scroll zoom, right-drag pan, R key reset — via POST `/camera` endpoint + `mjv_moveCamera()` on sim thread
+- Scripts use `streamer.make_free_camera(model)` + `streamer.drain_camera_commands()` for interactive camera
 - Suppress HTTP access logging for clean terminal
 - Bind `0.0.0.0` for VS Code port detection
 - **Per-user ports:** default `port=18080`, but host runbook assigns 18081-18085 per user to avoid collision on shared machine

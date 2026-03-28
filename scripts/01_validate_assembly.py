@@ -49,42 +49,101 @@ data = mujoco.MjData(model)
 # Body IDs
 plate_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, "plate")
 ball_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, "ball")
+hand_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, "hand")
 
 # Joint IDs and qpos addresses
 joint_names = [f"joint{i}" for i in range(1, 8)]
 joint_ids = [mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, n) for n in joint_names]
 joint_addrs = [model.jnt_qposadr[jid] for jid in joint_ids]
 
+# Plate free joint addresses
+plate_joint_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, "plate_free")
+plate_qpos_addr = model.jnt_qposadr[plate_joint_id]
+plate_qvel_addr = model.jnt_dofadr[plate_joint_id]
+
+# Ball free joint addresses
+ball_joint_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, "ball_free")
+ball_qpos_addr = model.jnt_qposadr[ball_joint_id]
+ball_qvel_addr = model.jnt_dofadr[ball_joint_id]
+
 # Home pose: j6=1.8 (mid-range) to address asymmetric range [-0.0175, 3.7525]
 home = [0.0, -0.785, 0.0, -2.356, 0.0, 1.8, 0.785]
 
-# Set arm to home pose
+# ---------------------------------------------------------------------------
+# Phase 1: Set arm to home pose with gripper open
+# ---------------------------------------------------------------------------
 for addr, val in zip(joint_addrs, home):
     data.qpos[addr] = val
-
-# Set actuator controls to hold home pose
 for i, val in enumerate(home):
     data.ctrl[i] = val
-# Close gripper
-data.ctrl[7] = 0.008
-
-# Forward pass to compute plate world position
+data.ctrl[7] = 0.04  # Open gripper
 mujoco.mj_forward(model, data)
 
-# Place ball on plate: plate position + 0.025m above surface
-plate_pos = data.xpos[plate_id].copy()
-ball_qpos_addr = model.jnt_qposadr[
-    mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, "ball_free")
-]
-# Free joint qpos: [x, y, z, qw, qx, qy, qz]
-data.qpos[ball_qpos_addr:ball_qpos_addr + 3] = plate_pos + [0, 0, 0.025]
-data.qpos[ball_qpos_addr + 3:ball_qpos_addr + 7] = [1, 0, 0, 0]  # identity quat
-# Zero ball velocity
-ball_qvel_addr = model.jnt_dofadr[
-    mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, "ball_free")
-]
-data.qvel[ball_qvel_addr:ball_qvel_addr + 6] = 0
+# ---------------------------------------------------------------------------
+# Phase 2: Position plate edge between gripper fingers
+# ---------------------------------------------------------------------------
+hand_pos = data.xpos[hand_id].copy()
+hand_mat = data.xmat[hand_id].reshape(3, 3)
 
+# Finger pads are at approximately (0, 0, 0.104) in hand frame
+grip_local = np.array([0.0, 0.0, 0.104])
+grip_world = hand_pos + hand_mat @ grip_local
+
+# Finger slide direction in world frame (hand local Y axis)
+finger_slide = hand_mat[:, 1].copy()
+finger_slide /= np.linalg.norm(finger_slide)
+
+# Orient plate so its Z axis (thin dimension) aligns with finger slide,
+# ensuring the fingers close on the 10mm plate thickness.
+plate_z = finger_slide
+
+# Plate X = direction plate extends from grip edge (hand X, orthogonalized)
+hand_x = hand_mat[:, 0].copy()
+plate_x = hand_x - np.dot(hand_x, plate_z) * plate_z
+plate_x /= np.linalg.norm(plate_x)
+
+# Plate Y completes right-hand frame
+plate_y = np.cross(plate_z, plate_x)
+
+# Convert rotation matrix to quaternion
+R_plate = np.column_stack([plate_x, plate_y, plate_z])
+plate_quat = np.zeros(4)
+mujoco.mju_mat2Quat(plate_quat, R_plate.flatten())
+
+# Place plate center offset from grip by half plate width (0.15m) along plate X
+plate_center = grip_world + plate_x * 0.15
+
+# Set plate free joint position and orientation
+data.qpos[plate_qpos_addr:plate_qpos_addr + 3] = plate_center
+data.qpos[plate_qpos_addr + 3:plate_qpos_addr + 7] = plate_quat
+data.qvel[plate_qvel_addr:plate_qvel_addr + 6] = 0
+mujoco.mj_forward(model, data)
+
+print(f"Finger slide direction (world): {finger_slide}")
+print(f"Plate orientation (quat): {plate_quat}")
+print(f"Plate center: {plate_center}")
+
+# ---------------------------------------------------------------------------
+# Phase 3: Close gripper on plate edge and settle
+# ---------------------------------------------------------------------------
+data.ctrl[7] = 0.0  # Close gripper on plate edge
+print("Closing gripper on plate edge...")
+for _ in range(400):  # 2 seconds settling at 200 Hz
+    mujoco.mj_step(model, data)
+
+print(f"Plate position after grip: {data.xpos[plate_id]}")
+
+# ---------------------------------------------------------------------------
+# Phase 4: Place ball on plate
+# ---------------------------------------------------------------------------
+plate_pos = data.xpos[plate_id].copy()
+# Ball goes above the plate surface (plate Z direction, offset by 0.025m)
+plate_mat_after = data.xmat[plate_id].reshape(3, 3)
+plate_up = plate_mat_after[:, 2]  # plate surface normal
+ball_pos = plate_pos + plate_up * 0.025
+data.qpos[ball_qpos_addr:ball_qpos_addr + 3] = ball_pos
+data.qpos[ball_qpos_addr + 3:ball_qpos_addr + 7] = [1, 0, 0, 0]
+data.qvel[ball_qvel_addr:ball_qvel_addr + 6] = 0
 mujoco.mj_forward(model, data)
 
 print(f"Plate world pos: {data.xpos[plate_id]}")

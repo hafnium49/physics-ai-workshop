@@ -55,8 +55,8 @@ joint_names = [f"joint{i}" for i in range(1, 8)]
 joint_ids = [mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, n) for n in joint_names]
 joint_addrs = [model.jnt_qposadr[jid] for jid in joint_ids]
 
-# Home pose: j6=1.8 (mid-range) to address asymmetric range [-0.0175, 3.7525]
-home = [0.0, -0.785, 0.0, -2.356, 0.0, 1.8, 0.785]
+# Home pose: j5, j6, j7 adjusted for plate grip orientation
+home = [0.0, -0.785, 0.0, -2.356, 1.184, 3.184, 1.158]
 
 # Set arm to home pose
 for addr, val in zip(joint_addrs, home):

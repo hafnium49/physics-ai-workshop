@@ -1,7 +1,7 @@
 """Step 3: Baseline PID controller for ball-on-plate balancing.
 
 Applies a PID controller to joint6/joint7 to keep the ball centered on the plate.
-Prints Survival Time to terminal. Deliberately mediocre gains for workshop demo.
+Prints Survival Time to terminal. Deliberately uses WRONG SIGN so the ball falls off quickly.
 
 Default: live MJPEG streaming with auto-reset on ball drop.
 Fallback: --no-stream saves a single 10s attempt as .mp4.
@@ -69,8 +69,8 @@ dt = model.opt.timestep
 plate_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, "plate")
 ball_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, "ball")
 
-# Home pose (j6=1.8 mid-range)
-home = [0.0, -0.785, 0.0, -2.356, 0.0, 1.8, 0.785]
+# Home pose (j5, j6, j7 adjusted for new plate orientation)
+home = [0.0, -0.785, 0.0, -2.356, 1.184, 3.184, 1.158]
 joint_names = [f"joint{i}" for i in range(1, 8)]
 
 # Joint IDs and addresses (cached for diagnostics)
@@ -110,6 +110,7 @@ def run_joint_diagnostics(m, d):
 
     Nudge each wrist joint by +0.01 rad and measure plate position change.
     This helps identify which joints actually tilt the plate.
+    Correct answer: joint6 (ctrl[5]) tilts X, joint7 (ctrl[6]) tilts Y.
     """
     # Save current state
     qpos_save = d.qpos.copy()
@@ -180,16 +181,17 @@ def run_simulation_step(d, pid_x, pid_y):
 
     # Apply corrections to joint6 (ctrl[5]) and joint7 (ctrl[6])
     # ===== DELIBERATE BASELINE BUG =====
-    # This uses the WRONG joints AND the WRONG sign (negative).
-    # - joint7 has almost zero plate-tilt authority
-    # - The negative sign pushes the plate the wrong way
+    # This uses the correct joints BUT the WRONG sign (negative).
+    # - The negative sign pushes the plate the wrong way, so the ball
+    #   rolls off almost immediately.
     # The workshop task is for Claude to discover:
-    #   1. joint5+joint6 is the correct pairing (not joint6+joint7)
-    #   2. The correction sign should be POSITIVE (not negative)
-    # With correct joints and sign, almost any Kp/Kd achieves 10s.
+    #   1. ctrl[5]=joint6 for X, ctrl[6]=joint7 for Y (already correct)
+    #   2. The correction sign should be POSITIVE, not negative
+    #   3. Kp~2, Kd~0 is sufficient once the sign is fixed
+    # With correct sign and moderate gains, the ball survives 10s.
     # ===================================
     d.ctrl[5] = home[5] - correction_x  # joint6 for X (wrong sign!)
-    d.ctrl[6] = home[6] - correction_y  # joint7 for Y (weak joint!)
+    d.ctrl[6] = home[6] - correction_y  # joint7 for Y (wrong sign!)
 
     return error_x, error_y, False
 

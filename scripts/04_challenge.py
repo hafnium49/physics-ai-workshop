@@ -6,9 +6,9 @@
   Level 3 — Moving Target (sinusoidal joint offsets)
   Level 4 — Speed Record (increasing frequency until ball falls)
 
-Uses CORRECT joints and sign: joint5 (ctrl[4]) for Y, joint6 (ctrl[5]) for X, POSITIVE sign.
+Uses CORRECT joints and sign: joint6 (ctrl[5]) for X, joint7 (ctrl[6]) for Y, POSITIVE sign.
 
-Run with: python scripts/04_challenge.py --level 2 --kp 50 --kd 10 [--force 1.0] [--freq 0.5]
+Run with: python scripts/04_challenge.py --level 2 --kp 2 --kd 0 [--force 1.0] [--freq 0.5]
 """
 import os
 import sys
@@ -51,10 +51,10 @@ class PIDController:
 parser = argparse.ArgumentParser(description="Progressive disturbance challenge")
 parser.add_argument("--level", type=int, default=1, choices=[1, 2, 3, 4],
                     help="Challenge level 1-4 (default: 1)")
-parser.add_argument("--kp", type=float, default=50.0,
-                    help="Proportional gain (default: 50.0)")
-parser.add_argument("--kd", type=float, default=10.0,
-                    help="Derivative gain (default: 10.0)")
+parser.add_argument("--kp", type=float, default=2.0,
+                    help="Proportional gain (default: 2.0)")
+parser.add_argument("--kd", type=float, default=0.0,
+                    help="Derivative gain (default: 0.0)")
 parser.add_argument("--force", type=float, default=1.0,
                     help="Impulse force magnitude for Level 2 (default: 1.0N)")
 parser.add_argument("--freq", type=float, default=0.5,
@@ -78,7 +78,7 @@ plate_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, "plate")
 ball_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, "ball")
 
 # Home pose
-home = [0.0, -0.785, 0.0, -2.356, 0.0, 1.8, 0.785]
+home = [0.0, -0.785, 0.0, -2.356, 1.184, 3.184, 1.158]
 joint_names = [f"joint{i}" for i in range(1, 8)]
 
 # Joint IDs (cached)
@@ -131,7 +131,7 @@ def level_header(level):
         print(f"=== Level 3: Moving Target (freq={args.freq} Hz) ===")
     elif level == 4:
         print(f"=== Level 4: Speed Record (start freq={args.freq} Hz) ===")
-    print(f"PID: Kp={KP}, Kd={KD} (joint5+joint6, sign=+)")
+    print(f"PID: Kp={KP}, Kd={KD} (joint6+joint7, sign=+)")
 
 
 def run_one_attempt(level, rng, max_duration=None):
@@ -217,9 +217,8 @@ def run_one_attempt(level, rng, max_duration=None):
             break
 
         # Hold non-PID joints at home
-        for i in [0, 1, 2, 3]:  # joint1-4
+        for i in [0, 1, 2, 3, 4]:  # joint1-5
             data.ctrl[i] = home[i]
-        data.ctrl[6] = home[6]  # joint7
         data.ctrl[7] = 0.008  # gripper
 
         # Sense: ball position relative to plate
@@ -231,15 +230,15 @@ def run_one_attempt(level, rng, max_duration=None):
         correction_x = pid_x.compute(error_x)
         correction_y = pid_y.compute(error_y)
 
-        # Apply corrections: joint5 (ctrl[4]) for Y, joint6 (ctrl[5]) for X
+        # Apply corrections: joint6 (ctrl[5]) for X, joint7 (ctrl[6]) for Y
         # POSITIVE sign (correct solution)
         if level in (3, 4):
             freq = current_freq if level == 4 else args.freq
-            data.ctrl[4] = home[4] + correction_y + amplitude * np.sin(2 * np.pi * freq * t)
             data.ctrl[5] = home[5] + correction_x + amplitude * np.cos(2 * np.pi * freq * t)
+            data.ctrl[6] = home[6] + correction_y + amplitude * np.sin(2 * np.pi * freq * t)
         else:
-            data.ctrl[4] = home[4] + correction_y
             data.ctrl[5] = home[5] + correction_x
+            data.ctrl[6] = home[6] + correction_y
 
         # Check ball off plate
         if ball_off_plate(data):
@@ -373,9 +372,8 @@ else:
                     break
 
                 # Hold non-PID joints at home
-                for i in [0, 1, 2, 3]:
+                for i in [0, 1, 2, 3, 4]:
                     data.ctrl[i] = home[i]
-                data.ctrl[6] = home[6]
                 data.ctrl[7] = 0.008
 
                 # Sense
@@ -387,14 +385,14 @@ else:
                 correction_x = pid_x.compute(error_x)
                 correction_y = pid_y.compute(error_y)
 
-                # Apply: joint5 (ctrl[4]) for Y, joint6 (ctrl[5]) for X, POSITIVE sign
+                # Apply: joint6 (ctrl[5]) for X, joint7 (ctrl[6]) for Y, POSITIVE sign
                 if args.level in (3, 4):
                     freq = current_freq if args.level == 4 else args.freq
-                    data.ctrl[4] = home[4] + correction_y + amplitude * np.sin(2 * np.pi * freq * t)
                     data.ctrl[5] = home[5] + correction_x + amplitude * np.cos(2 * np.pi * freq * t)
+                    data.ctrl[6] = home[6] + correction_y + amplitude * np.sin(2 * np.pi * freq * t)
                 else:
-                    data.ctrl[4] = home[4] + correction_y
                     data.ctrl[5] = home[5] + correction_x
+                    data.ctrl[6] = home[6] + correction_y
 
                 # Check ball off plate
                 if ball_off_plate(data):

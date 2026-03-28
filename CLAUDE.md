@@ -81,8 +81,8 @@ data.qpos[ball_qpos_addr:ball_qpos_addr+3] = data.xpos[plate_id] + [0, 0, 0.025]
 data.qpos[ball_qpos_addr+3:ball_qpos_addr+7] = [1, 0, 0, 0]  # identity quaternion
 ```
 
-**Home pose:** `j1=0, j2=-0.785, j3=0, j4=-2.356, j5=0, j6=1.8, j7=0.785`
-Note: `j6=1.8` (mid-range) is important — this joint has an asymmetric range.
+**Home pose:** `j1=0, j2=-0.785, j3=0, j4=-2.356, j5=1.184, j6=3.184, j7=1.158`
+Note: j5, j6, j7 are set so the plate is horizontal with the edge gripped by the fingers.
 
 When writing a PID controller for the first time, do not run a systematic joint authority analysis upfront. Let the initial attempt use a reasonable guess for which joints to control, and diagnose from the results.
 

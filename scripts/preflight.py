@@ -25,7 +25,7 @@ if _project_root not in sys.path:
 # Helpers
 # ---------------------------------------------------------------------------
 
-HOME_POSE = [0.0, -0.785, 0.0, -2.356, 0.0, 1.8, 0.785]
+HOME_POSE = [0.0, -0.785, 0.0, -2.356, 1.184, 3.184, 1.158]
 
 results = []  # list of (passed, label, message)
 
@@ -141,8 +141,8 @@ def check_5_correct_pid():
         dx = (ex - prev_ex) / dt
         dy = (ey - prev_ey) / dt
 
-        data.ctrl[4] = HOME_POSE[4] + (50.0 * ey + 10.0 * dy)   # joint5 for Y
-        data.ctrl[5] = HOME_POSE[5] + (50.0 * ex + 10.0 * dx)   # joint6 for X
+        data.ctrl[5] = HOME_POSE[5] + (2.0 * ex)   # joint6 for X
+        data.ctrl[6] = HOME_POSE[6] + (2.0 * ey)   # joint7 for Y
         prev_ex, prev_ey = ex, ey
 
         if abs(ex) > 0.14 or abs(ey) > 0.14 or brel[2] < -0.02:
@@ -176,8 +176,8 @@ def check_6_wrong_pid():
         dx = (ex - prev_ex) / dt
         dy = (ey - prev_ey) / dt
 
-        data.ctrl[5] = HOME_POSE[5] - (50.0 * ex + 10.0 * dx)   # wrong sign
-        data.ctrl[6] = HOME_POSE[6] - (50.0 * ey + 10.0 * dy)   # wrong joint
+        data.ctrl[5] = HOME_POSE[5] - (2.0 * ex)   # wrong sign
+        data.ctrl[6] = HOME_POSE[6] - (2.0 * ey)   # wrong sign
         prev_ex, prev_ey = ex, ey
 
         if abs(ex) > 0.14 or abs(ey) > 0.14 or brel[2] < -0.02:
@@ -218,13 +218,13 @@ def check_7_joint_authority():
         dxy = np.sqrt(diff[0] ** 2 + diff[1] ** 2)
         deltas[jnum] = dxy
 
-    ok = deltas[5] > 0.001 and deltas[6] > 0.001 and deltas[7] < deltas[5]
+    ok = deltas[6] > 0.001 and deltas[7] < deltas[5]
     msg = (
         f"Joint authority "
         f"(j5={deltas[5]:.4f}, j6={deltas[6]:.4f}, j7={deltas[7]:.4f})"
     )
     if not ok:
-        msg += " — expected j5>0.001, j6>0.001, j7<j5"
+        msg += " — expected j6>0.001, j7<j5"
     return ok, msg
 
 

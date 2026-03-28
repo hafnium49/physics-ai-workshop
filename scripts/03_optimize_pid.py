@@ -47,7 +47,7 @@ plate_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, "plate")
 ball_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, "ball")
 ball_joint_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, "ball_free")
 
-home = [0.0, -0.785, 0.0, -2.356, 0.0, 1.8, 0.785]
+home = [0.0, -0.785, 0.0, -2.356, 1.184, 3.184, 1.158]
 joint_names = [f"joint{i}" for i in range(1, 8)]
 
 
@@ -142,10 +142,10 @@ print("=" * 60)
 
 # Pairings: (name, jx_ctrl_idx, jy_ctrl_idx)
 # jx = actuator index controlling plate X, jy = actuator index controlling plate Y
-# Empirically: joint6 (ctrl[5]) -> plate X, joint5 (ctrl[4]) -> plate Y
+# Empirically: joint6 (ctrl[5]) -> plate X, joint7 (ctrl[6]) -> plate Y
 pairings = [
-    ("j6(X)+j5(Y)", 5, 4),   # correct pairing
-    ("j6(X)+j7(Y)", 5, 6),   # j7 has no Y authority
+    ("j6(X)+j7(Y)", 5, 6),   # correct pairing
+    ("j6(X)+j5(Y)", 5, 4),   # also works (alternate)
     ("j5(X)+j6(Y)", 4, 5),   # axes swapped
     ("j5(X)+j4(Y)", 4, 3),   # wrong joints entirely
 ]
@@ -159,13 +159,13 @@ for name, jx, jy in pairings:
 # --- Phase 2: Confirm with the winning pairing ---
 print()
 print("=" * 60)
-print("Phase 2: Gain search with j6(X)+j5(Y), sign=+1")
+print("Phase 2: Gain search with j6(X)+j7(Y), sign=+1")
 print("=" * 60)
 
 results = []
 for kp in [5, 10, 20, 50, 100]:
     for kd in [1, 5, 10, 20]:
-        t = run_trial(5, 4, +1, kp, kd)
+        t = run_trial(5, 6, +1, kp, kd)
         results.append((kp, kd, t))
         marker = " ***" if t >= 10.0 else ""
         print(f"  Kp={kp:>3d} Kd={kd:>2d} -> Survival Time: {t:.1f}s{marker}")
@@ -228,9 +228,9 @@ else:
                 dx = (ex - prev_ex) / dt
                 dy = (ey - prev_ey) / dt
 
-                # j6(X)+j5(Y) with positive sign
+                # j6(X)+j7(Y) with positive sign
                 data.ctrl[5] = home[5] + (best[0] * ex + best[1] * dx)  # joint6 for X
-                data.ctrl[4] = home[4] + (best[0] * ey + best[1] * dy)  # joint5 for Y
+                data.ctrl[6] = home[6] + (best[0] * ey + best[1] * dy)  # joint7 for Y
 
                 prev_ex, prev_ey = ex, ey
 
@@ -255,6 +255,6 @@ else:
             print("WARNING: mujoco_streamer not installed, falling back to .mp4 output")
 
         print("\nRendering best result...")
-        t, frames = run_trial(4, 5, +1, best[0], best[1], render=True)
+        t, frames = run_trial(5, 6, +1, best[0], best[1], render=True)
         mediapy.write_video("best_balance.mp4", frames, fps=30)
         print(f"Video saved: best_balance.mp4 ({len(frames)} frames, {t:.1f}s survival)")

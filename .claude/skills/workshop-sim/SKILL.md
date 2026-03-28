@@ -88,8 +88,10 @@ ctrl[joint] = home[joint] + pid_correction + offset
 ### Comparative Experiments
 Run multiple parameter values, record survival time for each, report the best. Useful for finding the gain sweet spot or the maximum disturbance force the controller can handle.
 
-## Streaming Reliability
+## Streaming and Interactive Camera
 
+- Create a free camera with `cam = streamer.make_free_camera(model)` after `streamer.start()`
+- In the render loop, call `streamer.drain_camera_commands(model, cam, renderer.scene)` before `renderer.update_scene(data, camera=cam)` — this enables browser-based orbit/zoom/pan
 - Use `render_every = int(1.0 / (fps * dt))` to limit rendering to ~30fps
 - Always wrap the simulation in `try/finally` with `streamer.stop()` in the finally block
 - Do NOT call `renderer.render()` from a thread other than the simulation thread (OpenGL is not thread-safe)

@@ -184,7 +184,7 @@
     <joint joint1="finger_joint1" joint2="finger_joint2" solimp="0.95 0.99 0.001" solref="0.005 1"/>
     <!-- Weld holds plate rigid to hand; relpose updated at runtime by scripts -->
     <weld body1="hand" body2="plate" relpose="0.15 0 0.1 1 0 0 0"
-          solref="0.005 1" solimp="0.95 0.99 0.001"/>
+          solref="0.002 1" solimp="0.99 0.995 0.001"/>
   </equality>
 
   <actuator>

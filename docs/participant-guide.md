@@ -143,15 +143,19 @@ If the ball falls off, ask Claude to tune the gains:
 
 ### Challenge 3 (advanced) — Oscillating plate
 
-> Add a slow sinusoidal oscillation to the plate — make the arm rock the plate in a small circle while still keeping the ball centered. Start at 0.5 Hz. What's the fastest oscillation frequency where the ball still survives 10 seconds?
+> Add a slow sinusoidal oscillation to the plate — make the arm rock the plate in a small circle while still keeping the ball centered. Start at 0.5 Hz. Can the ball survive 10 seconds?
+
+### Challenge 4 (advanced) — Survival Map
+
+> Run a survival map experiment: drop the ball at many different starting positions across the plate and record how long it survives at each. Generate a contour plot showing the controller's "basin of attraction." Where on the plate can the ball survive? Where does it always fall off?
 
 ### Bonus — Competition
 
 If time allows, try to beat other participants:
 
 - **Highest disturbance force survived for 10 seconds**
-- **Fastest plate oscillation with ball balanced**
-- **Longest survival time with both disturbances and oscillation**
+- **Largest green zone on the survival map** (try different Kp values)
+- **Longest survival time with oscillation enabled**
 
 Feel free to ask Claude anything along the way:
 - *"What is PID control?"*

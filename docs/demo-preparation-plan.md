@@ -88,7 +88,7 @@ Progressive difficulty that restores the tuning arc:
 1. **Level 1 — Static hold** (trivial with correct joints): ball stays for 10s. Confirms working PID.
 2. **Level 2 — Periodic impulses**: random force pushes on ball every 2s. Gains matter now. Target: survive 10s.
 3. **Level 3 — Moving target**: plate tilts in slow sinusoidal circle while keeping ball centered. Target: survive at increasing speeds.
-4. **Level 4 — Speed record**: fastest circle speed where ball survives 10s. Competitive target for leaderboard.
+4. **Level 4 — Survival Map**: drop ball at 400 positions (20x20 grid), record survival time, render contour plot. Shows PID controller's basin of attraction. ~9.5% of positions survive 10s; sweet spot is asymmetric at (~69mm, -69mm).
 
 Each level visually distinct on the live stream. Terminal prints current level, survival time, max perturbation survived.
 
@@ -141,7 +141,7 @@ Validation results (dry run, no video):
 | Visualization | MJPEG stream via Pillow + http.server | Zero new deps; VS Code auto-forwards |
 | JPEG encoding | Pillow (not opencv) | Already installed via mediapy |
 | Port allocation | 18081-18085 per user | Avoid collision on shared machine |
-| Sprint 3 content | Progressive disturbances | Restores difficulty curve; gains matter under perturbation |
+| Sprint 3 content | Progressive disturbances + survival map contour | Restores difficulty curve; gains matter under perturbation |
 | CLAUDE.md hints | Physics-only (not full answer) | Claude converges in 3-5 iterations |
 | Fallback | All scripts: --no-stream → .mp4 via mediapy | Insurance if streaming breaks |
 

@@ -96,12 +96,12 @@ Run multiple parameter values, record survival time for each, report the best. U
 Participants have a working PID controller and use the survival map (`04_survival_map.py`) as their metric. They ask Claude to improve the controller. The survival map shows a 2D contour plot of ball survival time as a function of initial position — the goal is to expand the green zone (10-second survival region).
 
 ### Approaches to suggest when asked to improve the controller
+- **Velocity feedback**: Enable the derivative term (Kd > 0) to react to ball speed, not just position
 - **Gain tuning**: Systematically try different Kp and Kd values, compare survival maps
-- **Nonlinear gains**: Use stronger corrections when the ball is far from center, gentler when close
-- **Velocity feedback**: Use ball velocity (not just position) to predict where the ball is going
-- **Feedforward compensation**: Account for known physics (gravity, plate geometry) proactively
-- **Multi-joint control**: Use additional wrist joints beyond the primary two
-- **Model predictive control**: Optimize a sequence of future actions rather than reacting to the current error
+- **Asymmetric gains**: Use different gains for X vs Y directions
+- **Gain scheduling**: Use stronger corrections when the ball is far from center, gentler when close
+- **Integral correction**: Add a small integral term (Ki) to fix persistent drift
+- **Output clamping**: Limit maximum correction to prevent overreaction and instability
 
 ### How to evaluate improvements
 The survival map prints a **Controller Score** = mean survival time in seconds across all grid positions. Baseline PID (Kp=2, Kd=0) scores ~3.3 sec. Higher is better. The score also appears on the contour plot.

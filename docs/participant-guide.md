@@ -155,13 +155,19 @@ The survival map shows where the ball can start on the plate and survive 10 seco
 
 ### Try improvements
 
-Here are some things you can ask Claude in plain English:
+Here are some things you can ask Claude, from easy to advanced:
 
-- *"Write a controller that reacts faster when the ball is near the edge. Test it on the survival map."*
-- *"Create a controller that uses the ball's speed, not just position. Save it and run the survival map."*
-- *"Is there a better method than PID? Write one and compare the survival maps."*
-- *"My controller gets 38 out of 400. Can you write one that does better?"*
-- *"My Controller Score is 3.3 seconds. Can you write a controller that scores higher?"*
+**Level 1 — Quick wins:**
+- *"Enable velocity feedback — set kd to a small positive value like 0.5"*
+- *"Try different combinations of kp and kd values"*
+
+**Level 2 — Smarter control:**
+- *"Use different gain values for the X and Y directions"*
+- *"Make the correction stronger when the ball is near the edge of the plate"*
+
+**Level 3 — Advanced:**
+- *"Add a slow integral correction to fix the ball drifting to one side"*
+- *"Limit the maximum correction so the controller doesn't overreact"*
 
 > Claude will create a controller file and tell you the exact command to run, e.g.: `python scripts/04_survival_map.py --controller my_controller.py`
 

@@ -73,7 +73,9 @@ Follow this iterative process. Do NOT run diagnostics as the first step — writ
 | Survival time stuck at ~1s regardless of gains | You may be controlling the wrong joints entirely — run the nudge diagnostic |
 | "Port already in use" error | A previous script is still running — press Ctrl+C in that terminal first |
 
-## Sprint 3: Challenge Patterns
+## Sprint 3: Challenges (8 min)
+
+Participants run `05_challenge.py` to see disturbances in action. This is a quick demo, not the main activity.
 
 ### Impulse Disturbances
 Apply random force pushes to the ball using `data.xfrc_applied[ball_id, :3]`. Apply the force for a short burst (e.g., 10 timesteps), then zero it out. Repeat at regular intervals.
@@ -85,15 +87,16 @@ offset = amplitude * sin(2 * pi * frequency * t)
 ctrl[joint] = home[joint] + pid_correction + offset
 ```
 
-### Survival Map
-Drop the ball at many different starting positions across the plate (e.g., a 20x20 grid over ±120mm). Run each trial headless (no rendering — fast), record survival time. Render a 2D contour plot using matplotlib showing survival time as a function of initial ball position. This reveals the PID controller's "basin of attraction" — where it can recover from vs. where the ball is doomed. Use `contourf` with a perceptually uniform colormap (e.g., `viridis`).
+## Sprint 4: Free Exploration (25 min)
 
-### Comparative Experiments
-Run multiple parameter values, record survival time for each, report the best. Useful for finding the gain sweet spot or comparing survival maps across different PID gains.
+Participants edit `scripts/05_challenge.py` (the controller playground) to improve the controller, then evaluate with `scripts/04_survival_map.py`.
 
-## Sprint 4: Free Exploration
-
-Participants have a working PID controller and use the survival map (`04_survival_map.py`) as their metric. They ask Claude to improve the controller. The survival map shows a 2D contour plot of ball survival time as a function of initial position — the goal is to expand the green zone (10-second survival region).
+### Workflow
+1. Participant asks Claude to improve the controller in `05_challenge.py`
+2. Claude edits the `make_controller()` function inside `05_challenge.py`
+3. Participant runs: `python scripts/04_survival_map.py --controller scripts/05_challenge.py`
+4. The survival map shows the Controller Score — compare with baseline (~3.3 sec)
+5. Repeat
 
 ### Approaches to suggest when asked to improve the controller
 - **Velocity feedback**: Enable the derivative term (Kd > 0) to react to ball speed, not just position
@@ -111,7 +114,7 @@ The survival map prints a **Controller Score** = mean survival time in seconds a
 - Score > 5.0: significant improvement (likely requires a different control approach)
 
 ### Controller file interface
-Participants create a file (e.g., `my_controller.py`) with:
+`05_challenge.py` exports `make_controller(model, dt, home)`:
 ```python
 def make_controller(model, dt, home):
     """Called once per trial. Return a controller function."""
@@ -120,10 +123,11 @@ def make_controller(model, dt, home):
         pass
     return controller
 ```
-Run with: `python scripts/04_survival_map.py --controller my_controller.py`
+Evaluate with: `python scripts/04_survival_map.py --controller scripts/05_challenge.py`
 Always stream the result to the browser — avoid `--no-stream`.
 
 ### Important notes
+- Edit `05_challenge.py` — do NOT modify `04_survival_map.py`
 - Let the participant describe what they want in plain English — do NOT require control theory jargon
 - Always run the survival map after making changes so the participant can see the effect
 - If an approach fails to implement, fall back to gain tuning (systematically try many Kp/Kd values)

@@ -104,7 +104,11 @@ Participants have a working PID controller and use the survival map (`04_surviva
 - **Model predictive control**: Optimize a sequence of future actions rather than reacting to the current error
 
 ### How to evaluate improvements
-Run `04_survival_map.py` with the participant's modified controller. Compare the number of grid positions surviving 10 seconds against the baseline (~38/400 with Kp=2, Kd=0).
+The survival map prints a **Controller Score** = mean survival time in seconds across all grid positions. Baseline PID (Kp=2, Kd=0) scores ~3.3 sec. Higher is better. The score also appears on the contour plot.
+- Score < 3.3: worse than baseline PID
+- Score 3.3-4.0: marginal improvement
+- Score 4.0-5.0: meaningful improvement (better gains or derivative term)
+- Score > 5.0: significant improvement (likely requires a different control approach)
 
 ### Controller file interface
 Participants create a file (e.g., `my_controller.py`) with:

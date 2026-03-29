@@ -100,6 +100,8 @@ When a participant asks you to improve or change the controller:
 4. The `make_controller` function is called once per trial and must return a callable `controller(data, plate_id, ball_id, step, t)` that sets `data.ctrl` values
 5. Always stream the survival map to the browser for visual comparison — avoid `--no-stream`
 
+The survival map prints a **Controller Score** (mean survival time in seconds across all grid positions). The baseline PID scores ~3.3 sec. Use this score to compare controllers — higher is better.
+
 ## Model Architecture
 
 ### Franka Panda (`content/franka_panda/`)

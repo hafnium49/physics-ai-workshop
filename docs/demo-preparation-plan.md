@@ -201,6 +201,7 @@ Restructured from 3 sprints (build from scratch) to 4 sprints (run scripts → e
 Key changes:
 - Split 05_challenge.py: Level 4 (survival map) extracted to standalone 04_survival_map.py
 - Scripts pre-copied to participant workspaces (spoiler comments kept intentionally)
+- Controller Score metric (mean survival time) added to 04_survival_map.py terminal output and contour plot
 - Participant guide rewritten with plain-English prompts for Sprint 4
 - Host runbook updated to copy scripts directory
 

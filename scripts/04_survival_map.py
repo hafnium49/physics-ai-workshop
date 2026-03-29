@@ -218,6 +218,14 @@ def render_survival_map(xs, ys, survival_grid, controller_name):
     # Mark sweet spot
     best_idx = np.unravel_index(survival_grid.argmax(), survival_grid.shape)
     ax.plot(xs[best_idx[1]] * 1000, ys[best_idx[0]] * 1000, 'w*', markersize=15)
+    # Score annotation
+    score = survival_grid.mean()
+    perfect = int((survival_grid >= 9.9).sum())
+    total = survival_grid.size
+    annotation = f"Score: {score:.1f} sec\nPerfect: {perfect}/{total} ({perfect*100/total:.1f}%)"
+    ax.text(0.02, 0.98, annotation, transform=ax.transAxes, fontsize=10,
+            verticalalignment='top', fontfamily='monospace',
+            bbox=dict(boxstyle='round,pad=0.4', facecolor='white', alpha=0.8))
     fig.tight_layout()
     fig.canvas.draw()
     w, h = fig.canvas.get_width_height()
@@ -246,11 +254,16 @@ if probe_t < 0.01:
 
 xs, ys, grid = run_survival_grid(args.grid, make_ctrl)
 
+score = grid.mean()
+perfect = int((grid >= 9.9).sum())
+total = args.grid ** 2
 best_idx = np.unravel_index(grid.argmax(), grid.shape)
-print(f"Max survival: {grid.max():.1f}s at offset "
-      f"({xs[best_idx[1]]*1000:.0f}mm, {ys[best_idx[0]]*1000:.0f}mm)")
-print(f"Mean survival: {grid.mean():.1f}s")
-print(f"Positions surviving 10s: {(grid >= 9.9).sum()}/{args.grid**2}")
+
+print(f"\n  ╔══════════════════════════════════╗")
+print(f"  ║  Controller Score: {score:.1f} sec  ║")
+print(f"  ╚══════════════════════════════════╝")
+print(f"  Perfect positions: {perfect}/{total} ({perfect*100/total:.1f}%)")
+print(f"  Max survival: {grid.max():.1f}s at offset ({xs[best_idx[1]]*1000:.0f}mm, {ys[best_idx[0]]*1000:.0f}mm)")
 
 map_img = render_survival_map(xs, ys, grid, controller_name)
 

@@ -161,6 +161,7 @@ Here are some things you can ask Claude in plain English:
 - *"Create a controller that uses the ball's speed, not just position. Save it and run the survival map."*
 - *"Is there a better method than PID? Write one and compare the survival maps."*
 - *"My controller gets 38 out of 400. Can you write one that does better?"*
+- *"My Controller Score is 3.3 seconds. Can you write a controller that scores higher?"*
 
 > Claude will create a controller file and tell you the exact command to run, e.g.: `python scripts/04_survival_map.py --controller my_controller.py`
 
@@ -168,7 +169,9 @@ Always use the live stream for the survival map — do not use `--no-stream`.
 
 ### Competition
 
-How many grid positions survive 10 seconds? Check with other participants!
+What's your **Controller Score**? The default PID scores about 3.3 seconds. Can you beat **4.0 seconds**?
+
+> Tell the host your score for the leaderboard!
 
 Feel free to ask Claude anything along the way:
 - *"What is PID control?"*

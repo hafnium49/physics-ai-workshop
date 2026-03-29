@@ -38,7 +38,7 @@ Build a Franka Panda arm holding a plate with a ball, then optimize PID control 
 
 1. **Explore** (15 min) — Run the pre-assembled model, start live stream, move joints to build intuition
 2. **PID Discovery** (12 min) — Run the baseline PID (wrong sign), diagnose with Claude, discover the correct joints and sign
-3. **Challenges** (8 min) — Run disturbance challenges to test PID robustness
+3. **First Iteration** (8 min) — Run the baseline survival map, make one improvement (e.g., enable Kd), measure the score change
 4. **Free Exploration** (25 min) — Improve the controller beyond basic PID. Use the survival map (`04_survival_map.py`) as the metric to measure progress
 
 ## Live Visualization

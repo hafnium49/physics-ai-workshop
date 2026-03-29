@@ -102,6 +102,8 @@ When a participant asks you to improve or change the controller:
 
 The survival map prints a **Controller Score** (mean survival time in seconds across all grid positions). The baseline PID scores ~3.3 sec. Use this score to compare controllers — higher is better.
 
+Controllers must define `make_controller(model, dt, home)` returning a function `controller(data, plate_id, ball_id, step, t)`. Use only `numpy` — do not add new dependencies or change the function signature.
+
 ## Model Architecture
 
 ### Franka Panda (`content/franka_panda/`)

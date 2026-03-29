@@ -127,6 +127,7 @@ Always stream the result to the browser — avoid `--no-stream`.
 - Let the participant describe what they want in plain English — do NOT require control theory jargon
 - Always run the survival map after making changes so the participant can see the effect
 - If an approach fails to implement, fall back to gain tuning (systematically try many Kp/Kd values)
+- Controllers must use only numpy — do not suggest importing new dependencies
 
 ## Streaming and Interactive Camera
 

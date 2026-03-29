@@ -6,7 +6,7 @@ Build and validate the full demo pipeline for the Physics-AI workshop. Material 
 
 **Key pivot:** Real-time MJPEG web streaming replaces .mp4 output. VS Code Remote SSH auto-forwards the port — engineers see live simulation in browser. Iteration time drops from ~90s to ~15s.
 
-**Key physics finding:** With position actuators, PID gain tuning is trivially easy once the correct joints (j5+j6) and sign (+) are found. Static balancing alone won't fill 30 minutes. **Solution: progressive disturbance challenges** restore the difficulty curve.
+**Key physics finding:** With position actuators, PID gain tuning is trivially easy once the correct joints (j6+j7) and sign (+) are found. Static balancing alone won't fill 30 minutes. **Solution: progressive disturbance challenges** restore the difficulty curve.
 
 **Robustness hardening:** All scripts resolve model paths relative to script location (not cwd), read streaming port from `STREAM_PORT` env var (not hardcoded 18080), handle port conflicts with friendly error messages, and recover from NaN without killing the stream.
 
@@ -68,7 +68,7 @@ Implementation details:
 
 ## Step 4: Update baseline PID script (Sprint 2) — DONE
 
-**File:** `scripts/02_pid_baseline.py` (updated, verified: 0.8s survival with wrong baseline)
+**File:** `scripts/02_pid_baseline.py` (updated, verified: ~0.3s survival with wrong baseline)
 
 - Add `LiveStreamer` integration
 - `while True` loop with auto-reset on ball fall (reposition ball, restart timer)
@@ -192,7 +192,7 @@ Confirmed: CLAUDE.md does NOT reveal correct joint pairing, sign, or gains (phys
 Restructured from 3 sprints (build from scratch) to 4 sprints (run scripts → explore improvements):
 - Sprint 1 (15 min): Explore — run pre-copied 01_validate_assembly.py
 - Sprint 2 (12 min): PID Discovery — run 02_pid_baseline.py (wrong PID), guided diagnosis with Claude
-- Sprint 3 (8 min): Challenges — run 05_challenge.py levels 1-2
+- Sprint 3 (8 min): First Iteration — run 05_challenge.py standalone (watch default PID), run 04_survival_map.py (baseline score), make one change (kd=0.5), re-measure
 - Sprint 4 (25 min): Free Exploration — improve controller, use 04_survival_map.py as metric
 
 Key changes:

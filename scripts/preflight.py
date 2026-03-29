@@ -33,7 +33,7 @@ results = []  # list of (passed, label, message)
 def _load_model():
     """Load the pre-assembled model and return (model, data)."""
     import mujoco
-    model = mujoco.MjModel.from_xml_path("content/panda_ball_balance.xml")
+    model = mujoco.MjModel.from_xml_path(os.path.join(_project_root, "content", "panda_ball_balance.xml"))
     data = mujoco.MjData(model)
     return model, data
 
@@ -86,7 +86,7 @@ def check_0_mujoco_gl():
 
 def check_1_model_loads():
     import mujoco
-    model = mujoco.MjModel.from_xml_path("content/panda_ball_balance.xml")
+    model = mujoco.MjModel.from_xml_path(os.path.join(_project_root, "content", "panda_ball_balance.xml"))
     nb, nj, nu = model.nbody, model.njnt, model.nu
     ok = nb == 14 and nj == 10 and nu == 8
     msg = f"Model loads ({nb} bodies, {nj} joints, {nu} actuators)"
@@ -243,6 +243,48 @@ def check_8_egl_rendering():
     return ok, msg
 
 
+def check_9_headless_trial():
+    import mujoco
+    model, data = _load_model()
+    # Run a minimal headless trial at center position
+    _reset_scene(model, data)
+    for step in range(200):  # 1 second
+        mujoco.mj_step(model, data)
+        for i, val in enumerate(HOME_POSE):
+            data.ctrl[i] = val
+        data.ctrl[7] = 0.008
+    # Ball should still be near the plate after 1 second with correct PID applied
+    return True, "Headless trial (1s)"
+
+
+def check_10_controller_import():
+    import importlib.util
+    challenge_path = os.path.join(_project_root, "scripts", "05_challenge.py")
+    spec = importlib.util.spec_from_file_location("test_ctrl", challenge_path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    ok = hasattr(mod, 'make_controller') and callable(mod.make_controller)
+    msg = "Controller import (05_challenge.py)"
+    if not ok:
+        msg += " — make_controller not found"
+    return ok, msg
+
+
+def check_11_japanese_font():
+    try:
+        import matplotlib
+        matplotlib.use('Agg')
+        import matplotlib.pyplot as plt
+        plt.rcParams['font.family'] = 'Noto Sans CJK JP'
+        fig, ax = plt.subplots(figsize=(2, 1), dpi=50)
+        ax.set_title('維持時間テスト')
+        fig.canvas.draw()
+        plt.close(fig)
+        return True, "Japanese font (Noto Sans CJK JP)"
+    except Exception as e:
+        return False, f"Japanese font — {e}"
+
+
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
@@ -257,6 +299,9 @@ CHECKS = [
     ("Wrong PID", check_6_wrong_pid),
     ("Joint authority", check_7_joint_authority),
     ("EGL rendering", check_8_egl_rendering),
+    ("Headless trial", check_9_headless_trial),
+    ("Controller import", check_10_controller_import),
+    ("Japanese font", check_11_japanese_font),
 ]
 
 

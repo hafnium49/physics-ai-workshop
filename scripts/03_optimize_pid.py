@@ -207,6 +207,7 @@ else:
         try:
             while True:
                 # 各イテレーションでシーンをリセット
+                mujoco.mj_resetData(model, data)
                 for jn, val in zip(joint_names, home):
                     jid = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, jn)
                     data.qpos[model.jnt_qposadr[jid]] = val

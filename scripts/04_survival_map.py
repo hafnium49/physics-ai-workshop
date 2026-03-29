@@ -8,10 +8,15 @@
 実行方法: python scripts/04_survival_map.py [--controller my_ctrl.py] [--kp 2] [--kd 0] [--grid 20]
 """
 import os
+import signal
 import sys
 import time
 os.environ.setdefault("MUJOCO_GL", "egl")
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+
+def _timeout_handler(signum, frame):
+    raise TimeoutError("コントローラーがタイムアウトしました")
 
 _script_dir = os.path.dirname(os.path.abspath(__file__))
 _project_root = os.path.dirname(_script_dir)
@@ -125,7 +130,12 @@ if args.controller:
     try:
         spec = importlib.util.spec_from_file_location("user_controller", ctrl_path)
         _mod = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(_mod)
+        signal.signal(signal.SIGALRM, _timeout_handler)
+        signal.alarm(5)  # 5秒タイムアウト
+        try:
+            spec.loader.exec_module(_mod)
+        finally:
+            signal.alarm(0)
     except BaseException as e:
         print(f"エラー: {args.controller} の読み込みに失敗: {e}")
         print("このメッセージをClaudeに貼り付けてください。")
@@ -169,21 +179,28 @@ def run_headless_trial(x0, y0, make_ctrl_fn):
     # コントローラーを実行
     controller_fn = make_ctrl_fn(model, dt, home)
     max_steps = int(10.0 / dt)
-    for step in range(max_steps):
-        mujoco.mj_step(model, d)
-        if np.any(np.isnan(d.xpos[ball_id])):
-            return step * dt
-        for i in [0, 1, 2, 3, 4]:
-            d.ctrl[i] = home[i]
-        d.ctrl[7] = 0.008
-        try:
-            controller_fn(d, plate_id, ball_id, step, step * dt)
-        except BaseException:
-            return step * dt
-        brel = d.xpos[ball_id] - d.xpos[plate_id]
-        ex, ey = brel[0], brel[1]
-        if abs(ex) > 0.14 or abs(ey) > 0.14 or brel[2] < -0.02:
-            return (step + 1) * dt
+    signal.signal(signal.SIGALRM, _timeout_handler)
+    signal.alarm(15)  # 15秒タイムアウト
+    try:
+        for step in range(max_steps):
+            mujoco.mj_step(model, d)
+            if np.any(np.isnan(d.xpos[ball_id])):
+                return step * dt
+            for i in [0, 1, 2, 3, 4]:
+                d.ctrl[i] = home[i]
+            d.ctrl[7] = 0.008
+            try:
+                controller_fn(d, plate_id, ball_id, step, step * dt)
+            except (BaseException, TimeoutError):
+                return step * dt
+            brel = d.xpos[ball_id] - d.xpos[plate_id]
+            ex, ey = brel[0], brel[1]
+            if abs(ex) > 0.14 or abs(ey) > 0.14 or brel[2] < -0.02:
+                return (step + 1) * dt
+    except TimeoutError:
+        return step * dt
+    finally:
+        signal.alarm(0)  # タイムアウト解除
     return 10.0
 
 

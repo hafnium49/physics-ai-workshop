@@ -45,7 +45,7 @@ for i in {1..5}; do
     sudo -u engineer$i bash -c "cd ~ && python3 -m venv workshop_env"
 
     # 3. Install MuJoCo and MediaPy (for rendering .mp4s without a GUI)
-    sudo -u engineer$i bash -c "~/workshop_env/bin/pip install mujoco mediapy numpy"
+    sudo -u engineer$i bash -c "~/workshop_env/bin/pip install mujoco mediapy numpy matplotlib Pillow"
 
     # 4. Auto-activate the environment upon login
     sudo -u engineer$i bash -c "echo 'source ~/workshop_env/bin/activate' >> ~/.bashrc"
@@ -58,6 +58,7 @@ for i in {1..5}; do
     sudo cp -r /path/to/physics-ai-workshop/content/* /home/engineer$i/physics_sim/
     sudo cp /path/to/physics-ai-workshop/mujoco_streamer.py /home/engineer$i/physics_sim/
     sudo cp -r /path/to/physics-ai-workshop/scripts /home/engineer$i/physics_sim/scripts/
+    sudo cp /path/to/physics-ai-workshop/.gitignore /home/engineer$i/physics_sim/
 
     # 7. Set per-user streaming port to avoid collisions
     echo "export STREAM_PORT=1808$i" | sudo tee -a /home/engineer$i/.bashrc > /dev/null

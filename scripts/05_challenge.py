@@ -113,8 +113,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="コントローラーの10秒間簡易テスト")
     parser.add_argument("--port", type=int, default=None,
-                        help="配信ポート（デフォルト: STREAM_PORT環境変数）")
+                        help="配信ポート（デフォルト: STREAM_PORT環境変数または18080）")
     args = parser.parse_args()
+    stream_port = args.port if args.port is not None else int(os.environ.get("STREAM_PORT", 18080))
 
     print("コントローラーの簡易テストを実行中。完全な維持マップを取得するには:")
     print("  python scripts/04_survival_map.py --controller scripts/05_challenge.py")
@@ -152,10 +153,8 @@ if __name__ == "__main__":
 
     # --- レンダラーとストリーマー ---
     renderer = mujoco.Renderer(model, height=480, width=640)
-    port_kwarg = {}
-    if args.port is not None:
-        port_kwarg["port"] = args.port
-    streamer = LiveStreamer(**port_kwarg)
+    print(f"ポート {stream_port} でライブ配信を開始中...")
+    streamer = LiveStreamer(port=stream_port)
     streamer.start()
     cam = streamer.make_free_camera(model)
 

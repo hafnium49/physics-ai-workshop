@@ -125,7 +125,7 @@ if args.controller:
         spec = importlib.util.spec_from_file_location("user_controller", ctrl_path)
         _mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(_mod)
-    except Exception as e:
+    except BaseException as e:
         print(f"ERROR loading {args.controller}: {e}")
         print("Copy this message and paste it to Claude to fix the issue.")
         print("Falling back to default PID.\n")

@@ -45,7 +45,7 @@ for i in {1..5}; do
     sudo -u engineer$i bash -c "cd ~ && python3 -m venv workshop_env"
 
     # 3. Install MuJoCo and MediaPy (for rendering .mp4s without a GUI)
-    sudo -u engineer$i bash -c "~/workshop_env/bin/pip install mujoco mediapy numpy"
+    sudo -u engineer$i bash -c "~/workshop_env/bin/pip install mujoco mediapy numpy matplotlib Pillow"
 
     # 4. Auto-activate the environment upon login
     sudo -u engineer$i bash -c "echo 'source ~/workshop_env/bin/activate' >> ~/.bashrc"
@@ -53,14 +53,34 @@ for i in {1..5}; do
     # 5. Create a clean working directory and copy workshop content
     sudo -u engineer$i bash -c "mkdir -p ~/physics_sim"
 
-    # 6. Copy MuJoCo content (Panda model + ball_and_plate) into workspace
+    # 6. Copy MuJoCo content (Panda model + ball_and_plate) and streamer into workspace
     # Adjust the source path to where you cloned the physics-ai-workshop repo
     sudo cp -r /path/to/physics-ai-workshop/content/* /home/engineer$i/physics_sim/
+    sudo cp /path/to/physics-ai-workshop/mujoco_streamer.py /home/engineer$i/physics_sim/
+    sudo cp -r /path/to/physics-ai-workshop/scripts /home/engineer$i/physics_sim/scripts/
+    sudo cp /path/to/physics-ai-workshop/.gitignore /home/engineer$i/physics_sim/
+
+    # 7. Set per-user streaming port to avoid collisions
+    echo "export STREAM_PORT=1808$i" | sudo tee -a /home/engineer$i/.bashrc > /dev/null
+    echo "export MUJOCO_GL=egl" | sudo tee -a /home/engineer$i/.bashrc > /dev/null
+
+    # 8. Copy CLAUDE.md, Claude Code settings, and skills into workspace
+    sudo cp /path/to/physics-ai-workshop/CLAUDE.md /home/engineer$i/physics_sim/
+    sudo mkdir -p /home/engineer$i/physics_sim/.claude
+    sudo cp /path/to/physics-ai-workshop/.claude/settings.json /home/engineer$i/physics_sim/.claude/
+    sudo cp -r /path/to/physics-ai-workshop/.claude/skills /home/engineer$i/physics_sim/.claude/skills/
+
+    # 9. Fix ownership before git init (git init must run as the user)
     sudo chown -R engineer$i:workshop /home/engineer$i/physics_sim/
+
+    # 10. Initialize git repo (Claude Code resolves settings from git root)
+    sudo -u engineer$i bash -c "cd ~/physics_sim && git init && git add -A && git commit -m 'Workshop setup'"
 done
 ```
 
 > **Replace** `<WORKSHOP_PASSWORD>` with the actual password for each user. For better security, generate unique passwords per user (see your SSH setup scripts).
+
+> **Note:** The `scripts/` directory contains reference scripts with spoiler comments. These are intentionally provided so participants can run them and focus on the exploration sprint.
 
 ---
 
@@ -99,11 +119,68 @@ Ensure you are logged into your Anthropic/Claude account in your primary web bro
 
 ## 5. Phase 4: Pre-Flight Validation
 
-To guarantee a zero-friction experience for the engineers, perform a single end-to-end test on one of the provisioned accounts.
+### Automated pre-flight check
 
-1. From your personal laptop, open VS Code and use the Remote SSH extension to connect as a participant would (using the connection details from your SSH setup).
+From the cloned repo directory on the host:
+
+```bash
+cd /path/to/physics-ai-workshop
+MUJOCO_GL=egl python scripts/preflight.py
+```
+
+All 9 checks should print `[PASS]`. If any fail, fix the issue before proceeding.
+
+### Manual end-to-end test
+
+1. From your personal laptop, open VS Code and use the Remote SSH extension to connect as `engineer1`.
 2. Enter the workshop password.
 3. Open a new terminal in VS Code (`Ctrl + ~`).
 4. Verify the prompt shows `(workshop_env) engineer1@<hostname>`.
-5. Run the command: `claude -p "Say hello to the workshop"`
-6. If Claude responds without asking for a login, **your environments are perfectly provisioned.**
+5. Run: `claude -p "Load panda_ball_balance.xml, set the arm to the home pose, place the ball on the plate, and start a live stream using mujoco_streamer.py"`
+6. Verify VS Code shows the port forwarding notification — click it and confirm you can see the live video in your browser.
+7. If Claude responds without asking for a login and the stream is visible, **your environments are perfectly provisioned.**
+
+---
+
+## 6. Reference Scripts & Sprint Mapping
+
+These are pre-built reference scripts that are pre-copied into participant workspaces. Participants run these directly and use Claude Code to explore and improve them.
+
+| Script | Sprint | Purpose | Example |
+|--------|--------|---------|---------|
+| `preflight.py` | Pre-workshop (host only) | Validates model, streamer, PID, rendering | `MUJOCO_GL=egl python scripts/preflight.py` |
+| `01_validate_assembly.py` | Sprint 1: Explore | Load model, stream live, see robot + ball | `python scripts/01_validate_assembly.py` |
+| `02_pid_baseline.py` | Sprint 2: PID Discovery | Deliberately wrong PID baseline (~0.3s survival) | `python scripts/02_pid_baseline.py --kp 50 --kd 10` |
+| `03_optimize_pid.py` | Sprint 2: PID Discovery | Grid search proving correct joints exist (host validation) | `python scripts/03_optimize_pid.py --no-render` |
+| `04_survival_map.py` | Sprint 3+4: Baseline & Exploration | Survival map with Controller Score metric for controller comparison | `python scripts/04_survival_map.py --kp 2 --kd 0` |
+| `05_challenge.py` | Sprint 3+4: First Iteration & Exploration | Controller exploration playground (participants edit via Claude) | `python scripts/04_survival_map.py --controller scripts/05_challenge.py` |
+
+> All scripts support `--no-stream` (saves .mp4 fallback) and `--port` (default: `STREAM_PORT` env var or 18080). Scripts resolve model paths relative to their own location, so they work from any working directory.
+
+> **Leaderboard tip:** Write participant Controller Scores on the whiteboard during Sprint 4. Show multiple runs per participant to celebrate improvement trajectories, not just the highest score.
+
+### "Break glass" fallback
+
+If a participant's Claude Code session is stuck at Sprint 2 after 25 minutes and cannot discover the correct joints, the host can quietly offer this hint:
+
+> *"Try telling Claude: Focus on joint 6 and joint 7 for the PID control, and make sure the correction sign is positive. Use small gains like Kp=2."*
+
+If Sprint 2 is completely blocked, copy `05_challenge.py` into the participant's workspace as a working reference to unblock Sprint 3:
+
+```bash
+sudo cp /path/to/physics-ai-workshop/scripts/05_challenge.py /home/engineer$i/physics_sim/
+sudo chown engineer$i:workshop /home/engineer$i/physics_sim/05_challenge.py
+```
+
+---
+
+## 7. Workshop Day: Running the Autonomous Demo
+
+Before participants start their own sessions, run the interactive demo to set the stage. Follow the step-by-step guide in `docs/autonomous-demo-script.md`.
+
+**Quick summary:**
+1. Open Claude Code on the host account (or any engineer account)
+2. Show only the browser stream on the projector — not the terminal
+3. Paste 5 prompts in sequence: load model → first PID → diagnose joints → fix → add disturbances
+4. Total time: 3-5 minutes
+5. Then tell participants: *"Now it's your turn."*

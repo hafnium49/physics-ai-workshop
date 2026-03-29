@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python:*)",
+      "Bash(python3:*)",
+      "Bash(MUJOCO_GL=egl python:*)",
+      "Bash(MUJOCO_GL=egl python3:*)",
+      "Bash(pip install:*)",
+      "Bash(pip list:*)",
+      "Bash(pip show:*)",
+      "Bash(source:*)",
+      "Bash(kill:*)",
+      "Bash(lsof:*)",
+      "Bash(ls:*)",
+      "Bash(cat:*)",
+      "Bash(head:*)",
+      "Bash(tail:*)",
+      "Bash(git:*)",
+      "Bash(timeout:*)"
+    ],
+    "additionalDirectories": ["/tmp"]
+  }
+}

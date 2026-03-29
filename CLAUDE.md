@@ -12,12 +12,22 @@ This is a 1-hour hands-on workshop where material engineers (not software develo
 - Available packages: `mujoco`, `mediapy`, `numpy`
 - Participant working directory: `~/physics_sim/` (content files are copied there)
 - GPU: NVIDIA Blackwell (available for MuJoCo MJX GPU-accelerated simulation)
+- `MUJOCO_GL=egl` environment variable is required for headless rendering
+- `mujoco_streamer.py` helper is available in the workspace for live visualization
+
+## Available Models
+
+- `content/franka_panda/panda.xml` — 7-DOF arm from MuJoCo Menagerie
+- `content/franka_panda/scene.xml` — Panda with default scene (ground plane, lighting)
+- `content/ball_and_plate.xml` — Flat plate + ball with free joint (standalone fragment)
+- `content/panda_ball_balance.xml` — Pre-assembled Panda arm gripping a plate (with ball as free body). Ready for PID balancing task.
 
 ## Constraints
 
-- **No GUI** — users connect via VS Code Remote SSH. Always render simulations to `.mp4` files using `mediapy.write_video()`. Never attempt to open viewer windows.
+- **No GUI** — users connect via VS Code Remote SSH. Never attempt to open viewer windows.
+- **Primary output is live streaming** via `mujoco_streamer.py`. Fall back to `.mp4` via `mediapy.write_video()` only if streaming is unavailable.
 - **Keep explanations simple** — avoid programming jargon. Explain physics/control concepts when introducing them.
-- **Always include video output** in simulation scripts so the user can see results.
+- **Always include visual output** in simulation scripts so the user can see results.
 - Use MuJoCo's Python bindings (`import mujoco`).
 
 ## Workshop Goal
@@ -26,42 +36,116 @@ Build a Franka Panda arm holding a plate with a ball, then optimize PID control 
 
 ### Sprint Structure
 
-1. **Assembly** (15 min) — Combine models, attach plate to end-effector, render to video
-2. **Baseline** (15 min) — Drop ball onto plate, apply basic PID controller, record results
-3. **Optimization** (30 min) — Systematically tune Kp/Kd until ball stays centered for 10 seconds
+1. **Explore** (15 min) — Run the pre-assembled model, start live stream, move joints to build intuition
+2. **PID Discovery** (12 min) — Run the baseline PID (wrong sign), diagnose with Claude, discover the correct joints and sign
+3. **First Iteration** (8 min) — Run the baseline survival map, make one improvement (e.g., enable Kd), measure the score change
+4. **Free Exploration** (25 min) — Improve the controller beyond basic PID. Use the survival map (`04_survival_map.py`) as the metric to measure progress
+
+## Live Visualization
+
+Use the `mujoco_streamer.py` helper for real-time browser-based viewing:
+
+```python
+from mujoco_streamer import LiveStreamer
+
+streamer = LiveStreamer()
+streamer.start()
+cam = streamer.make_free_camera(model)
+
+# In simulation loop:
+streamer.drain_camera_commands(model, cam, renderer.scene)
+renderer.update_scene(data, camera=cam)
+streamer.update(renderer.render())
+```
+
+Each participant has a unique streaming port assigned via the `STREAM_PORT` environment variable. `LiveStreamer()` reads this automatically — do not hardcode a port number.
+
+VS Code automatically detects the port and offers "Open in Browser".
+Fall back to `mediapy.write_video()` only if streaming is unavailable.
+
+The browser view is interactive: left-drag to orbit, scroll to zoom, right-drag to pan, press R to reset the camera. Scripts must use `streamer.make_free_camera(model)` and call `streamer.drain_camera_commands()` in the render loop to enable this.
+
+## Ball-on-Plate Balancing Task
+
+The pre-assembled model `panda_ball_balance.xml` has:
+- Plate rotated 90° and positioned so the gripper fingers clamp its edge (`ctrl[7]=0.008`). The plate extends horizontally outward from the grip point.
+- Ball as a top-level free body — must be repositioned onto the plate in scripts
+
+**Important physics notes:**
+- The plate is rigidly attached to the end-effector and extends outward from the grip. To tilt the plate, identify which wrist joints produce rotation in the plate plane. Not all joints contribute equally to plate orientation.
+- The ball has a free joint and can roll/fall off the plate.
+- Use `data.xpos[ball_id] - data.xpos[plate_id]` to track ball position relative to plate.
+- Print `Survival Time: X.X seconds` to terminal for optimization tracking.
+
+**Ball repositioning (required in every script):**
+After setting arm joint positions and calling `mj_forward()`, place the ball on the plate:
+
+```python
+ball_qpos_addr = model.jnt_qposadr[ball_joint_id]
+data.qpos[ball_qpos_addr:ball_qpos_addr+3] = data.xpos[plate_id] + [0, 0, 0.025]
+data.qpos[ball_qpos_addr+3:ball_qpos_addr+7] = [1, 0, 0, 0]  # identity quaternion
+```
+
+**Home pose:** `j1=0, j2=-0.785, j3=0, j4=-2.356, j5=1.184, j6=3.184, j7=1.158`
+Note: j5, j6, j7 are set so the plate is horizontal with the edge gripped by the fingers.
+
+When writing a PID controller for the first time, do not run a systematic joint authority analysis upfront. Let the initial attempt use a reasonable guess for which joints to control, and diagnose from the results.
+
+## Sprint 4: Controller Improvement
+
+When a participant asks you to improve or change the controller:
+1. Create a separate controller file (e.g., `my_controller.py`) with a `make_controller(model, dt, home)` function
+2. Do NOT modify `04_survival_map.py` directly
+3. Run: `python scripts/04_survival_map.py --controller my_controller.py`
+4. The `make_controller` function is called once per trial and must return a callable `controller(data, plate_id, ball_id, step, t)` that sets `data.ctrl` values
+5. Always stream the survival map to the browser for visual comparison — avoid `--no-stream`
+
+The survival map prints a **Controller Score** (mean survival time in seconds across all grid positions). The baseline PID scores ~3.3 sec. Use this score to compare controllers — higher is better.
+
+Controllers must define `make_controller(model, dt, home)` returning a function `controller(data, plate_id, ball_id, step, t)`. Use only `numpy` — do not add new dependencies or change the function signature.
 
 ## Model Architecture
 
 ### Franka Panda (`content/franka_panda/`)
-- `panda.xml` — 7-DOF arm from MuJoCo Menagerie. Kinematic chain: `link0` → `link1` ... → `link7` → `hand` → `left_finger`/`right_finger`
+- `panda.xml` — 7-DOF arm from MuJoCo Menagerie. Kinematic chain: `link0` -> `link1` ... -> `link7` -> `hand` -> `left_finger`/`right_finger`
 - `scene.xml` — Includes `panda.xml` plus ground plane, lighting, skybox. Uses `timestep="0.005"` with `implicitfast` integrator.
-- **End-effector attachment point:** The `hand` body (child of `link7`) has a site named `gripper` at `pos="0 0 0.1"` — attach the plate here.
-- **Actuators:** 7 position-controlled joints (`actuator1`–`actuator7`) + 1 gripper actuator (`actuator8`). Joints use built-in PD control with `kp` and `kv` gains already set.
-- **Joint names:** `joint1`–`joint7` (arm), `finger_joint1`/`finger_joint2` (gripper, coupled via equality constraint)
+- **End-effector attachment point:** The `hand` body (child of `link7`) has a site named `gripper` at `pos="0 0 0.1"`. In `panda_ball_balance.xml`, the plate is rotated 90° and positioned so the fingers grip its edge.
+- **Actuators:** 7 position-controlled joints (`actuator1`-`actuator7`) + 1 gripper actuator (`actuator8`). Joints use built-in PD control with `kp` and `kv` gains already set.
+- **Joint names:** `joint1`-`joint7` (arm), `finger_joint1`/`finger_joint2` (gripper, coupled via equality constraint)
 
 ### Ball and Plate (`content/ball_and_plate.xml`)
 - `plate` body: box geom `0.15 x 0.15 x 0.005`, mass 0.5 kg
 - `ball` body: sphere radius 0.02, mass 0.1 kg, has a `free` joint (`ball_free`) — 6-DOF unconstrained motion
-- To assemble: nest the plate/ball bodies inside the Panda's `hand` body (or weld to `gripper` site) rather than using `<include>`, since ball_and_plate.xml is a standalone fragment
+- To assemble: nest the plate body inside the Panda's `hand` body with a 90° rotation (`quat="0.7071 0.7071 0 0"`) so the fingers grip the plate edge. ball_and_plate.xml is a standalone fragment — do not use `<include>`.
 
 ## MuJoCo Quick Reference
 
 ```python
 import mujoco
-import mediapy
 import numpy as np
+from mujoco_streamer import LiveStreamer
 
 model = mujoco.MjModel.from_xml_path("path/to/model.xml")
 data = mujoco.MjData(model)
 renderer = mujoco.Renderer(model, height=480, width=640)
 
-frames = []
+# Live streaming setup
+streamer = LiveStreamer()
+streamer.start()
+
 for _ in range(duration_steps):
     mujoco.mj_step(model, data)
     renderer.update_scene(data)
-    frames.append(renderer.render())
+    streamer.update(renderer.render())
 
-mediapy.write_video("output.mp4", frames, fps=30)
+# Fallback: save to file if streaming is unavailable
+# import mediapy
+# frames = []
+# for _ in range(duration_steps):
+#     mujoco.mj_step(model, data)
+#     renderer.update_scene(data)
+#     frames.append(renderer.render())
+# mediapy.write_video("output.mp4", frames, fps=30)
 ```
 
 ### Useful APIs for this workshop

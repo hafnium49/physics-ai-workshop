@@ -81,16 +81,13 @@ Implementation details:
 
 ## Step 5: Create disturbance challenge script (Sprint 3 content) — DONE
 
-**File:** `scripts/05_challenge.py` (created, syntax verified)
+**File:** `scripts/05_challenge.py` (rewritten as controller exploration playground)
 
-Progressive difficulty that restores the tuning arc:
+Now serves as the participant's editable controller file for Sprint 4. Exports `make_controller(model, dt, home)` so `04_survival_map.py --controller scripts/05_challenge.py` can evaluate it. Has guardrail comments (DO NOT EDIT / EDIT HERE zones) and leveled exploration hints in Japanese.
 
-1. **Level 1 — Static hold** (trivial with correct joints): ball stays for 10s. Confirms working PID.
-2. **Level 2 — Periodic impulses**: random force pushes on ball every 2s. Gains matter now. Target: survive 10s.
-3. **Level 3 — Moving target**: plate tilts in slow sinusoidal circle while keeping ball centered. Target: survive at increasing speeds.
-4. **Level 4 — Survival Map**: drop ball at 400 positions (20x20 grid), record survival time, render contour plot. Shows PID controller's basin of attraction. ~9.5% of positions survive 10s; sweet spot is asymmetric at (~69mm, -69mm).
+**File:** `scripts/04_survival_map.py` (standalone survival map metric)
 
-Each level visually distinct on the live stream. Terminal prints current level, survival time, max perturbation survived.
+Evaluates controllers via a 20x20 headless grid sweep. Prints Controller Score (mean survival time). Supports `--controller` flag for pluggable controllers. Baseline PID scores ~3.3 sec.
 
 ---
 
@@ -233,7 +230,7 @@ Three reviews (Software Architect, Game Designer, Reality Checker) converged: or
 - `git init` in participant workspaces (Claude Code resolves settings from git root)
 - Copy `CLAUDE.md` and `.claude/settings.json` to workspaces
 - `MUJOCO_GL=egl` in participant `.bashrc`
-- Do NOT copy reference scripts (spoiler comments visible to Claude)
+- Copy reference scripts to participant workspaces (spoiler comments kept intentionally for the restructured workshop)
 
 ### Killed (from reviews):
 - Custom slash commands — feature doesn't exist as user-defined files in Claude Code

@@ -73,19 +73,16 @@ Follow this iterative process. Do NOT run diagnostics as the first step — writ
 | Survival time stuck at ~1s regardless of gains | You may be controlling the wrong joints entirely — run the nudge diagnostic |
 | "Port already in use" error | A previous script is still running — press Ctrl+C in that terminal first |
 
-## Sprint 3: Challenges (8 min)
+## Sprint 3: First Iteration (8 min)
 
-Participants run `05_challenge.py` to see disturbances in action. This is a quick demo, not the main activity.
+Guided first pass through the improvement loop:
+1. Run `scripts/05_challenge.py` standalone — watch the default PID in action
+2. Run `scripts/04_survival_map.py` — see the baseline Controller Score (~3.3 sec)
+3. Make one change: ask Claude to set kd=0.5 in `05_challenge.py`
+4. Run `scripts/04_survival_map.py --controller scripts/05_challenge.py` — see the score change
+5. Run `scripts/05_challenge.py` again — watch the improved controller
 
-### Impulse Disturbances
-Apply random force pushes to the ball using `data.xfrc_applied[ball_id, :3]`. Apply the force for a short burst (e.g., 10 timesteps), then zero it out. Repeat at regular intervals.
-
-### Sinusoidal Plate Oscillation
-Add a time-varying offset to the PID joint commands:
-```
-offset = amplitude * sin(2 * pi * frequency * t)
-ctrl[joint] = home[joint] + pid_correction + offset
-```
+This teaches the full iteration workflow before Sprint 4's open exploration.
 
 ## Sprint 4: Free Exploration (25 min)
 

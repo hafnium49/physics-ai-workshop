@@ -31,13 +31,28 @@ AIコーディングエージェントでデジタルツインを構築
 
 ```
 physics-ai-workshop/
-├── content/                # シミュレーションモデル
-│   ├── ball_and_plate.xml  # プレート＋ボール（バランス対象）
-│   └── franka_panda/       # Franka Panda ロボットアーム（MuJoCo Menagerieより）
+├── content/                    # シミュレーションモデル
+│   ├── panda_ball_balance.xml  # プレート＋ボール付きPandaアーム（組み立て済み）
+│   ├── ball_and_plate.xml      # プレート＋ボール（スタンドアロン）
+│   └── franka_panda/           # Franka Panda ロボットアーム（MuJoCo Menagerieより）
+├── scripts/                    # リファレンススクリプト
+│   ├── preflight.py            # 事前チェック（ホスト専用）
+│   ├── 01_validate_assembly.py # スプリント1：ロボットを見る
+│   ├── 02_pid_baseline.py      # スプリント2：PID発見
+│   ├── 03_optimize_pid.py      # スプリント2：正解のPIDを検証
+│   ├── 04_survival_map.py      # スプリント3+4：維持マップメトリック
+│   └── 05_challenge.py         # スプリント3+4：コントローラ探索プレイグラウンド
+├── mujoco_streamer.py          # ライブ配信ヘルパー
 ├── docs/
-│   ├── participant-guide.md    # ワークショップ参加者向けステップバイステップガイド
-│   └── host-preparation-runbook.md  # ワークショップ主催者・管理者向け
-└── CLAUDE.md               # Claude Codeセッション用のコンテキスト
+│   ├── participant-guide.md    # 参加者ガイド（日本語）
+│   ├── host-preparation-runbook.md  # ホスト準備ランブック
+│   ├── autonomous-demo-script.md    # デモスクリプト
+│   └── demo-preparation-plan.md     # 準備計画
+├── .claude/
+│   ├── settings.json           # Claude Code権限設定
+│   └── skills/workshop-sim/    # ワークショップスキル
+│       └── SKILL.md
+└── CLAUDE.md                   # Claude Codeコンテキスト
 ```
 
 ## クイックスタート

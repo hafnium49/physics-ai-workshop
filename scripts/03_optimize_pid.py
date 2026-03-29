@@ -1,11 +1,11 @@
-"""Step 4: Validate that a 10-second solution exists.
+"""ステップ4: 10秒間の解が存在することを検証する。
 
-Systematically tests joint pairings and PID sign/gain combinations.
-Proves the task is solvable and identifies the correct control architecture.
+関節ペアとPID符号・ゲインの組み合わせを体系的にテストする。
+タスクが解決可能であることを証明し、正しい制御アーキテクチャを特定する。
 
-Default:  python scripts/03_optimize_pid.py               (grid search + render best as stream)
-Fallback: python scripts/03_optimize_pid.py --no-stream   (grid search + render best as .mp4)
-Dry run:  python scripts/03_optimize_pid.py --no-render   (grid search only, no video output)
+デフォルト:  python scripts/03_optimize_pid.py               （グリッド探索 + 最良結果を配信）
+フォールバック: python scripts/03_optimize_pid.py --no-stream   （グリッド探索 + 最良結果を.mp4で保存）
+ドライラン:  python scripts/03_optimize_pid.py --no-render   （グリッド探索のみ、映像出力なし）
 """
 import os
 import sys
@@ -17,7 +17,7 @@ import mujoco
 import numpy as np
 
 # ---------------------------------------------------------------------------
-# Optional streamer import
+# オプション: ストリーマーのインポート
 # ---------------------------------------------------------------------------
 try:
     from mujoco_streamer import LiveStreamer
@@ -26,21 +26,21 @@ except ImportError:
     HAS_STREAMER = False
 
 # ---------------------------------------------------------------------------
-# CLI
+# コマンドライン引数
 # ---------------------------------------------------------------------------
 parser = argparse.ArgumentParser(
-    description="PID optimization grid search for ball-on-plate balancing")
+    description="ボール・オン・プレートのPID最適化グリッド探索")
 parser.add_argument("--no-stream", action="store_true",
-                    help="Disable live streaming; save .mp4 instead")
+                    help="ライブ配信を無効化し、.mp4として保存")
 parser.add_argument("--no-render", action="store_true",
-                    help="Skip all rendering (dry run, no video output)")
+                    help="全レンダリングをスキップ（ドライラン）")
 parser.add_argument("--port", type=int, default=None,
-                    help="Streaming port (default: STREAM_PORT env var or 18080)")
+                    help="MJPEG配信ポート（デフォルト: STREAM_PORT環境変数または18080）")
 args = parser.parse_args()
 stream_port = args.port if args.port is not None else int(os.environ.get("STREAM_PORT", 18080))
 
 # ---------------------------------------------------------------------------
-# Load model
+# モデルの読み込み
 # ---------------------------------------------------------------------------
 _script_dir = os.path.dirname(os.path.abspath(__file__))
 _project_root = os.path.dirname(_script_dir)
@@ -56,23 +56,23 @@ joint_names = [f"joint{i}" for i in range(1, 8)]
 
 
 def run_trial(joint_x_idx, joint_y_idx, sign, kp, kd, duration=10.0, render=False):
-    """Run a simulation trial with given joint pairing, sign, and PID gains.
+    """指定された関節ペア、符号、PIDゲインでシミュレーション試行を実行する。
 
-    Args:
-        joint_x_idx: actuator index for X-axis control (0-based)
-        joint_y_idx: actuator index for Y-axis control (0-based)
-        sign: +1 or -1 for correction direction
-        kp, kd: PID gains
-        duration: simulation length in seconds
-        render: if True, return (survival_time, frames)
+    引数:
+        joint_x_idx: X軸制御のアクチュエータインデックス（0始まり）
+        joint_y_idx: Y軸制御のアクチュエータインデックス（0始まり）
+        sign: 補正方向の符号（+1 または -1）
+        kp, kd: PIDゲイン
+        duration: シミュレーション時間（秒）
+        render: Trueの場合、(survival_time, frames)を返す
 
-    Returns:
-        survival_time (float), or (survival_time, frames) if render=True
+    戻り値:
+        survival_time (float)、render=Trueの場合は (survival_time, frames)
     """
     data = mujoco.MjData(model)
     dt = model.opt.timestep
 
-    # Set arm to home pose
+    # アームをホームポーズに設定
     for jn, val in zip(joint_names, home):
         jid = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, jn)
         data.qpos[model.jnt_qposadr[jid]] = val
@@ -81,7 +81,7 @@ def run_trial(joint_x_idx, joint_y_idx, sign, kp, kd, duration=10.0, render=Fals
     data.ctrl[7] = 0.008
     mujoco.mj_forward(model, data)
 
-    # Place ball on plate
+    # ボールをプレートに配置
     ba = model.jnt_qposadr[ball_joint_id]
     bv = model.jnt_dofadr[ball_joint_id]
     data.qpos[ba:ba + 3] = data.xpos[plate_id] + [0, 0, 0.025]
@@ -104,34 +104,34 @@ def run_trial(joint_x_idx, joint_y_idx, sign, kp, kd, duration=10.0, render=Fals
     for step in range(steps):
         mujoco.mj_step(model, data)
 
-        # Hold all joints at home
+        # 全関節をホームに保持
         for i, val in enumerate(home):
             data.ctrl[i] = val
         data.ctrl[7] = 0.008
 
-        # Ball error
+        # ボール誤差
         brel = data.xpos[ball_id] - data.xpos[plate_id]
         ex, ey = brel[0], brel[1]
         dx = (ex - prev_ex) / dt
         dy = (ey - prev_ey) / dt
 
-        # Apply PID correction to selected joints
+        # 選択された関節にPID補正を適用
         data.ctrl[joint_y_idx] = home[joint_y_idx] + sign * (kp * ey + kd * dy)
         data.ctrl[joint_x_idx] = home[joint_x_idx] + sign * (kp * ex + kd * dx)
 
         prev_ex, prev_ey = ex, ey
 
-        # NaN check
+        # NaNチェック
         if np.any(np.isnan(data.xpos[ball_id])):
             t = step * dt
             return (t, frames) if render else t
 
-        # Ball off plate
+        # ボールがプレートから落下
         if abs(ex) > 0.14 or abs(ey) > 0.14 or brel[2] < -0.02:
             t = (step + 1) * dt
             return (t, frames) if render else t
 
-        # Render
+        # レンダリング
         if render and step % render_every == 0:
             renderer.update_scene(data, camera=cam_id)
             frames.append(renderer.render())
@@ -140,28 +140,28 @@ def run_trial(joint_x_idx, joint_y_idx, sign, kp, kd, duration=10.0, render=Fals
 
 
 try:
-    # --- Phase 1: Find the correct joint pairing ---
+    # --- フェーズ1: 正しい関節ペアを見つける ---
     print("=" * 60)
-    print("Phase 1: Testing joint pairings (Kp=2, Kd=0)")
+    print("フェーズ1: 関節ペアの検証 (Kp=2, Kd=0)")
     print("=" * 60)
 
     pairings = [
-        ("j6(X)+j7(Y)", 5, 6),   # correct pairing
-        ("j6(X)+j5(Y)", 5, 4),   # also works (alternate)
-        ("j5(X)+j6(Y)", 4, 5),   # axes swapped
-        ("j5(X)+j4(Y)", 4, 3),   # wrong joints entirely
+        ("j6(X)+j7(Y)", 5, 6),   # 正しいペア
+        ("j6(X)+j5(Y)", 5, 4),   # 代替ペア（動作する）
+        ("j5(X)+j6(Y)", 4, 5),   # 軸が逆
+        ("j5(X)+j4(Y)", 4, 3),   # 完全に間違った関節
     ]
 
     for name, jx, jy in pairings:
         for sign in [+1, -1]:
             t = run_trial(jx, jy, sign, kp=2, kd=0, duration=5.0)
-            marker = " <-- WORKS" if t >= 5.0 else ""
+            marker = " <-- 成功" if t >= 5.0 else ""
             print(f"  {name} sign={sign:+d} -> {t:.1f}s{marker}")
 
-    # --- Phase 2: Confirm with the winning pairing ---
+    # --- フェーズ2: 最良ペアでゲインを確認 ---
     print()
     print("=" * 60)
-    print("Phase 2: Gain search with j6(X)+j7(Y), sign=+1")
+    print("フェーズ2: ゲイン探索 j6(X)+j7(Y), sign=+1")
     print("=" * 60)
 
     results = []
@@ -170,23 +170,23 @@ try:
             t = run_trial(5, 6, +1, kp, kd)
             results.append((kp, kd, t))
             marker = " ***" if t >= 10.0 else ""
-            print(f"  Kp={kp:>3d} Kd={kd:>2d} -> Survival Time: {t:.1f}s{marker}")
+            print(f"  Kp={kp:>3d} Kd={kd:>2d} -> 維持時間: {t:.1f}秒{marker}")
 
     best = max(results, key=lambda x: x[2])
-    print(f"\nBest: Kp={best[0]}, Kd={best[1]}, Survival={best[2]:.1f}s")
+    print(f"\n最良: Kp={best[0]}, Kd={best[1]}, 維持時間={best[2]:.1f}秒")
 except KeyboardInterrupt:
-    print("\nGrid search interrupted.")
+    print("\nグリッド探索が中断されました。")
     raise SystemExit(0)
 
-# --- Phase 3: Render the best result (unless --no-render) ---
+# --- フェーズ3: 最良結果をレンダリング（--no-renderでなければ） ---
 if args.no_render:
-    print("\n--no-render specified, skipping video output.")
+    print("\n--no-render が指定されたため、映像出力をスキップします。")
 else:
     use_stream = (not args.no_stream) and HAS_STREAMER
 
     if use_stream:
-        # ---- Live MJPEG streaming of best result ----
-        print(f"\nStreaming best result on port {stream_port}...")
+        # ---- 最良結果のライブMJPEG配信 ----
+        print(f"\nポート {stream_port} で最良結果を配信中...")
         renderer = mujoco.Renderer(model, height=480, width=640)
         cam_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_CAMERA, "side")
         streamer = LiveStreamer(port=stream_port)
@@ -201,12 +201,12 @@ else:
         render_every = int(1.0 / (fps * dt))
         steps = int(10.0 / dt)
 
-        print(f"Streaming Kp={best[0]}, Kd={best[1]} (auto-reset loop)")
-        print("Press Ctrl+C to stop.\n")
+        print(f"配信中 Kp={best[0]}, Kd={best[1]}（自動リセットループ）")
+        print("Ctrl+C で停止できます。\n")
 
         try:
             while True:
-                # Reset scene each iteration
+                # 各イテレーションでシーンをリセット
                 for jn, val in zip(joint_names, home):
                     jid = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, jn)
                     data.qpos[model.jnt_qposadr[jid]] = val
@@ -248,18 +248,18 @@ else:
                         renderer.update_scene(data, camera=cam)
                         streamer.update(renderer.render())
         except KeyboardInterrupt:
-            print("\nStreaming stopped.")
+            print("\n配信を停止しました。")
         finally:
             streamer.stop()
 
     else:
-        # ---- .mp4 fallback mode ----
+        # ---- .mp4 フォールバックモード ----
         import mediapy
 
         if not args.no_stream and not HAS_STREAMER:
-            print("WARNING: mujoco_streamer not installed, falling back to .mp4 output")
+            print("警告: mujoco_streamerがインストールされていません。.mp4出力にフォールバックします")
 
-        print("\nRendering best result...")
+        print("\n最良結果をレンダリング中...")
         t, frames = run_trial(5, 6, +1, best[0], best[1], render=True)
         mediapy.write_video("best_balance.mp4", frames, fps=30)
-        print(f"Video saved: best_balance.mp4 ({len(frames)} frames, {t:.1f}s survival)")
+        print(f"動画を保存しました: best_balance.mp4 ({len(frames)} フレーム, 維持時間 {t:.1f}秒)")

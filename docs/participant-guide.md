@@ -1,213 +1,213 @@
-# Participant Guide — FY2026 Physics-AI Workshop
+# 参加者ガイド — FY2026 物理AIワークショップ
 
-Welcome! In this 1-hour workshop, you'll use an AI coding agent to build a physics simulation of a robotic arm balancing a ball on a plate — and watch it live in your browser.
+ようこそ！この1時間のワークショップでは、AIコーディングエージェントを使って、ロボットアームがプレート上のボールをバランスさせる物理シミュレーションを構築し、ブラウザでリアルタイムに観察します。
 
-**No programming experience needed.** You describe what you want in plain English, and the AI writes the code.
-
----
-
-## Before the Workshop
-
-Install these on your corporate laptop:
-
-1. **Visual Studio Code** — [Download here](https://code.visualstudio.com/)
-2. **Remote - SSH extension** — Open VS Code, go to Extensions (`Ctrl+Shift+X`), search "Remote - SSH", install it
-
-That's it. Everything else is pre-configured on the server.
+**プログラミング経験は不要です。** やりたいことを日本語で伝えるだけで、AIがコードを書いてくれます。
 
 ---
 
-## Connecting (Workshop Day)
+## ワークショップ前の準備
 
-You'll receive a **printed card** with your personal connection details and password.
+以下を社内ノートPCにインストールしてください：
 
-1. Open **VS Code**
-2. Click the green **`><`** icon in the bottom-left corner
-3. Select **"Connect to Host..."**
-4. Type the connection command from your card and press **Enter**
-5. When prompted, enter the password from your card
-6. Wait ~20 seconds for VS Code to finish setting up
+1. **Visual Studio Code** — [こちらからダウンロード](https://code.visualstudio.com/)
+2. **Remote - SSH 拡張機能** — VS Codeを開き、拡張機能（`Ctrl+Shift+X`）で「Remote - SSH」を検索してインストール
 
-You should see the bottom-left of VS Code change to show you're connected remotely.
+以上です。その他はすべてサーバー上に設定済みです。
 
 ---
 
-## Getting Started
+## 接続方法（ワークショップ当日）
 
-1. **Open a terminal:** Press `Ctrl + ~` (or go to Terminal → New Terminal)
-2. **Check your environment:** Your prompt should show `(workshop_env)` — this means your Python environment is ready
-3. **Go to your workspace:**
+個人の接続情報とパスワードが記載された**印刷カード**が配布されます。
+
+1. **VS Code** を開く
+2. 左下の緑色の **`><`** アイコンをクリック
+3. **「ホストに接続...」** を選択
+4. カードに記載された接続コマンドを入力して **Enter** を押す
+5. パスワードの入力を求められたら、カードに記載されたパスワードを入力
+6. VS Codeのセットアップが完了するまで約20秒待つ
+
+VS Codeの左下にリモート接続中であることが表示されます。
+
+---
+
+## はじめに
+
+1. **ターミナルを開く：** `Ctrl + ~` を押す（またはターミナル → 新しいターミナル）
+2. **環境を確認：** プロンプトに `(workshop_env)` と表示されていれば、Python環境の準備は完了です
+3. **ワークスペースに移動：**
    ```
    cd ~/physics_sim
    ```
-4. **Start the AI agent:**
+4. **AIエージェントを起動：**
    ```
    claude
    ```
 
-You're now talking to Claude Code. It already knows about the workshop, the robot model, and the streaming setup — just tell it what you want to do.
+これでClaude Codeと対話できます。Claude Codeはワークショップの内容、ロボットモデル、ストリーミング設定についてすでに把握しています。やりたいことを伝えるだけです。
 
-> **Your streaming port** is shown on your printed card (e.g., 18081). When Claude asks about ports or you want to specify one, use this number.
-
----
-
-## What You Just Watched
-
-Before the workshop started, the host ran a live demo where Claude Code discovered — by itself — which joints control the plate tilt. It tried the wrong joints, diagnosed the problem, switched to the right ones, and balanced the ball for 10 seconds. **Now it's your turn.**
+> **ストリーミングポート**は印刷カードに記載されています（例：18081）。Claudeがポートについて質問した場合や、ポートを指定したい場合は、この番号を使ってください。
 
 ---
 
-## How Live Viewing Works
+## 今見たデモについて
 
-Since we're working over SSH, there are no graphical windows. Instead, your simulation runs on the server and **streams live video to your browser**.
-
-When Claude runs a simulation script, you'll see a pop-up in the bottom-right corner of VS Code saying something like *"Your application running on port 18081 is available."* Click **"Open in Browser"** to watch the robot simulation in real time.
-
-The browser view is **interactive** — you can drag to rotate the view, scroll to zoom in/out, and right-drag to pan. Press **R** to reset the camera to the default angle. This works while the simulation is running.
-
-If you miss the pop-up, go to the **Ports** tab at the bottom of VS Code and click the globe icon next to the port number.
+ワークショップ開始前に、ホストがライブデモを実施しました。Claude Codeがプレートの傾きを制御する関節を自力で発見する様子をご覧いただきました。最初は間違った関節を試し、問題を診断し、正しい関節に切り替え、ボールを10秒間バランスさせました。**次はあなたの番です。**
 
 ---
 
-## Sprint 1: Explore the Robot (15 minutes)
+## ライブ表示の仕組み
 
-**Goal:** See the robot and understand which joints control the plate.
+SSH経由で作業しているため、グラフィカルウィンドウはありません。代わりに、シミュレーションはサーバー上で実行され、**ライブ映像がブラウザにストリーミング**されます。
 
-The simulation model is already pre-built — a Franka Panda robotic arm holding a plate with a ball on top. No assembly required.
+Claudeがシミュレーションスクリプトを実行すると、VS Codeの右下に*「ポート18081で実行中のアプリケーションが利用可能です」*のようなポップアップが表示されます。**「ブラウザで開く」**をクリックすると、ロボットシミュレーションをリアルタイムで観察できます。
 
-### Step 1 — See the robot
+ブラウザの表示はインタラクティブです。左ドラッグで回転、スクロールでズーム、右ドラッグで移動できます。**R**キーでカメラをデフォルトの角度にリセットできます。シミュレーション実行中でも操作可能です。
 
-Tell Claude:
-
-> Run scripts/01_validate_assembly.py and start the live stream.
-
-Watch the browser — you'll see the robot arm, the plate, and the ball rolling off. That's expected! The arm isn't actively balancing yet.
-
-### Step 2 — Explore the joints
-
-Now tell Claude:
-
-> Stop the simulation. Move joint 6 slowly, then joint 7, then joint 5. Which ones tilt the plate?
-
-Watch each joint move. Notice which ones tilt the plate and which ones barely do anything. **This matters for the next sprint.**
+ポップアップを見逃した場合は、VS Code下部の**ポート**タブでポート番号の横にある地球アイコンをクリックしてください。
 
 ---
 
-## Sprint 2: PID Discovery (12 minutes)
+## スプリント1：ロボットを探索する（15分）
 
-**Goal:** Discover why the baseline controller fails and fix it.
+**目標：** ロボットを観察し、どの関節がプレートを制御するか理解する。
 
-### Step 1 — Run the broken controller
+シミュレーションモデルはすでに構築済みです。Franka Pandaロボットアームがプレートを持ち、その上にボールが載っています。組み立て作業は不要です。
 
-Tell Claude:
+### ステップ1 — ロボットを見る
 
-> Run scripts/02_pid_baseline.py and start the live stream.
+Claudeに伝えてください：
 
-Watch the live stream. The ball falls off in less than 1 second. Look at the **Survival Time** printed in the terminal.
+> scripts/01_validate_assembly.pyを実行してライブ配信を開始して。
 
-### Step 2 — Diagnose and fix
+ブラウザを確認してください。ロボットアーム、プレート、ボールが転がり落ちる様子が見えます。これは想定通りです！アームはまだ能動的にバランスを取っていません。
 
-Tell Claude:
+### ステップ2 — 関節を探索する
 
-> The ball keeps falling off immediately. Can you check which joints actually control the plate tilt? And check if the correction sign is right.
+Claudeに伝えてください：
 
-Claude will analyze the joints and the correction direction. Once it finds the right joints and fixes the sign, survival time should jump to 10 seconds.
+> シミュレーションを停止して。関節6をゆっくり動かして、次に関節7、次に関節5を動かして。どの関節がプレートを傾けるか見たい。
 
-### Step 3 — Understand what changed
-
-Tell Claude:
-
-> Explain what you changed and why.
-
-This is the key insight: **which joints to control and the sign of the correction matter more than the gain values.**
+各関節の動きを観察してください。どの関節がプレートを傾け、どの関節がほとんど影響しないかに注目してください。**これは次のスプリントで重要になります。**
 
 ---
 
-## Sprint 3: Challenges (8 minutes)
+## スプリント2：PID発見（12分）
 
-**Goal:** Test the controller under disturbances.
+**目標：** ベースラインコントローラが失敗する理由を発見し、修正する。
 
-Now that the ball stays balanced on a still plate, let's make it harder.
+### ステップ1 — 動作しないコントローラを実行
 
-Tell Claude:
+Claudeに伝えてください：
 
-> Run scripts/05_challenge.py --level 2 and start the live stream.
+> scripts/02_pid_baseline.pyを実行してライブ配信を開始して。
 
-Watch the ball get pushed around by random forces. Does it survive?
+ライブ配信を観察してください。ボールは1秒未満で落下します。ターミナルに表示される**サバイバルタイム**を確認してください。
 
-**Optional:** Try Level 3 (oscillation):
+### ステップ2 — 診断と修正
 
-> Run scripts/05_challenge.py --level 3 and start the live stream.
+Claudeに伝えてください：
 
----
+> ボールがすぐに落ちてしまう。どの関節が実際にプレートの傾きを制御しているか確認して。補正の符号が正しいかも確認して。
 
-## Sprint 4: Free Exploration (25 minutes)
+Claudeが関節と補正方向を分析します。正しい関節を見つけて符号を修正すると、サバイバルタイムは10秒に跳ね上がるはずです。
 
-**Goal:** Improve the controller beyond basic PID.
+### ステップ3 — 変更内容を理解する
 
-### Get your baseline
+Claudeに伝えてください：
 
-Tell Claude:
+> 何を変更して、なぜそうしたか説明して。
 
-> Run scripts/04_survival_map.py and show me the survival map.
-
-The survival map shows where the ball can start on the plate and survive 10 seconds (green) vs. where it falls off (red). Your goal: **make the green zone cover more of the plate.**
-
-### Try improvements
-
-Here are some things you can ask Claude, from easy to advanced:
-
-**Level 1 — Quick wins:**
-- *"Enable velocity feedback — set kd to a small positive value like 0.5"*
-- *"Try different combinations of kp and kd values"*
-
-**Level 2 — Smarter control:**
-- *"Use different gain values for the X and Y directions"*
-- *"Make the correction stronger when the ball is near the edge of the plate"*
-
-**Level 3 — Advanced:**
-- *"Add a slow integral correction to fix the ball drifting to one side"*
-- *"Limit the maximum correction so the controller doesn't overreact"*
-
-> Claude will create a controller file and tell you the exact command to run, e.g.: `python scripts/04_survival_map.py --controller my_controller.py`
-
-Always use the live stream for the survival map — do not use `--no-stream`.
-
-### Competition
-
-What's your **Controller Score**? The default PID scores about 3.3 seconds. Can you beat **4.0 seconds**?
-
-> Tell the host your score for the leaderboard!
-
-Feel free to ask Claude anything along the way:
-- *"What is PID control?"*
-- *"Why does the ball keep falling to the left?"*
-- *"What happens if I set Kd to zero?"*
-- *"Can you try 10 different Kp values and show me which is best?"*
+これが重要な気づきです：**どの関節を制御するか、補正の符号が正しいかどうかは、ゲイン値よりも重要です。**
 
 ---
 
-## Tips
+## スプリント3：チャレンジ（8分）
 
-- **Watch the browser, not the terminal.** The live video stream is where you see the robot. The terminal shows numbers and status.
-- **If the video stream stops,** just tell Claude: *"Restart the live stream."*
-- **Ask questions freely.** Claude can explain physics, control theory, or anything about the simulation.
-- **If something breaks,** tell Claude: *"That didn't work. Here's the error:"* and paste the error message.
-- **Be specific.** Instead of *"make it better,"* try *"increase Kp to 100 and decrease Kd to 5."*
-- **Ctrl+C stops the simulation.** If you want to try something new, press `Ctrl+C` in the terminal to stop the current script.
-- **If you see "Port already in use",** it means a previous script is still running. Press `Ctrl+C` in that terminal first.
-- **Rotate the camera** by left-dragging in the browser. Scroll to zoom, right-drag to pan. Press R to reset the view.
+**目標：** 外乱下でコントローラをテストする。
+
+静止したプレート上でボールがバランスを保てるようになったので、難易度を上げましょう。
+
+Claudeに伝えてください：
+
+> scripts/05_challenge.py --level 2を実行してライブ配信を開始して。
+
+ランダムな力でボールが押される様子を観察してください。ボールは耐えられますか？
+
+**オプション：** レベル3（振動）を試してみましょう：
+
+> scripts/05_challenge.py --level 3を実行してライブ配信を開始して。
 
 ---
 
-## Troubleshooting
+## スプリント4：自由探索（25分）
 
-| Problem | Solution |
-|---------|----------|
-| VS Code disconnected | Click the green `><` icon → "Connect to Host" → reconnect |
-| Terminal is frozen | Open a new terminal: Terminal → New Terminal |
-| Claude is not responding | Press `Ctrl+C` to cancel, then type `claude` to restart |
-| Can't see the live video | Click the port forwarding popup in VS Code, or go to the Ports tab and click the globe icon |
-| Video shows but is frozen | Tell Claude: "Restart the live stream" |
-| "Port already in use" error | Another script is still running. Press `Ctrl+C` in the other terminal first, then retry |
-| `(workshop_env)` not showing | Run: `source ~/workshop_env/bin/activate` |
+**目標：** 基本的なPIDを超えてコントローラを改善する。
+
+### ベースラインを確認する
+
+Claudeに伝えてください：
+
+> scripts/04_survival_map.pyを実行してサバイバルマップを表示して。
+
+サバイバルマップは、ボールがプレート上のどの位置からスタートして10秒間生存できるか（緑）、落下するか（赤）を示します。目標：**緑のゾーンをプレート全体に広げること。**
+
+### 改善を試す
+
+Claudeに依頼できる内容を、簡単なものから上級者向けまで紹介します：
+
+**レベル1 — 手軽な改善：**
+- *「速度フィードバックを有効にして、Kdを0.5のような小さな正の値に設定して」*
+- *「KpとKdの値のいろいろな組み合わせを試して」*
+
+**レベル2 — より賢い制御：**
+- *「X方向とY方向で異なるゲイン値を使って」*
+- *「ボールがプレートの端に近いとき、補正を強くして」*
+
+**レベル3 — 上級：**
+- *「ボールが片側にゆっくり流れるのを修正するため、遅い積分補正を追加して」*
+- *「コントローラが過剰反応しないように、最大補正値を制限して」*
+
+> Claudeがコントローラファイルを作成し、実行コマンドを教えてくれます（例：`python scripts/04_survival_map.py --controller my_controller.py`）。
+
+サバイバルマップにはライブ配信を使ってください。`--no-stream` は使わないでください。
+
+### コンペティション
+
+あなたの**コントローラスコア**はいくつですか？デフォルトのPIDは約3.3秒です。**4.0秒**を超えられますか？
+
+> スコアをホストに伝えてください。リーダーボードに記録します！
+
+途中でClaude に何でも自由に質問できます：
+- *「PID制御とは何？」*
+- *「なぜボールが左に落ち続けるの？」*
+- *「Kdをゼロにしたらどうなる？」*
+- *「Kpの値を10通り試して、どれが一番良いか教えて」*
+
+---
+
+## ヒント
+
+- **ターミナルではなくブラウザを見てください。** ロボットが見えるのはライブ映像ストリームです。ターミナルには数値やステータスが表示されます。
+- **映像ストリームが止まったら、** Claudeに伝えてください：*「ライブ配信を再開して。」*
+- **自由に質問してください。** Claudeは物理学、制御理論、シミュレーションに関するあらゆることを説明できます。
+- **何かうまくいかなかったら、** Claudeに伝えてください：*「うまくいかなかった。エラーはこれ：」*と言ってエラーメッセージを貼り付けてください。
+- **具体的に伝えてください。** *「もっと良くして」*ではなく、*「Kpを100に増やして、Kdを5に減らして」*のように伝えましょう。
+- **Ctrl+Cでシミュレーションを停止できます。** 新しいことを試したい場合は、ターミナルで `Ctrl+C` を押して現在のスクリプトを停止してください。
+- **「ポートは既に使用中です」と表示されたら、** 前のスクリプトがまだ実行中です。そのターミナルで先に `Ctrl+C` を押してください。
+- **カメラを回転**するにはブラウザ内で左ドラッグします。スクロールでズーム、右ドラッグで移動。Rキーでビューをリセットできます。
+
+---
+
+## トラブルシューティング
+
+| 問題 | 解決方法 |
+|------|----------|
+| VS Codeが切断された | 緑色の `><` アイコンをクリック →「ホストに接続」→ 再接続 |
+| ターミナルがフリーズした | 新しいターミナルを開く：ターミナル → 新しいターミナル |
+| Claudeが応答しない | `Ctrl+C` を押してキャンセルし、`claude` と入力して再起動 |
+| ライブ映像が見えない | VS Codeのポートフォワーディングポップアップをクリックするか、ポートタブで地球アイコンをクリック |
+| 映像は表示されるがフリーズしている | Claudeに伝える：「ライブ配信を再開して」 |
+| 「ポートは既に使用中です」エラー | 別のスクリプトがまだ実行中です。そのターミナルで先に `Ctrl+C` を押してから再試行 |
+| `(workshop_env)` が表示されない | 次を実行：`source ~/workshop_env/bin/activate` |

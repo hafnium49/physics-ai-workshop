@@ -1,79 +1,79 @@
-# FY2026 Physics-AI Workshop
+# FY2026 物理AIワークショップ
 
-Building Digital Twins with AI Coding Agents
+AIコーディングエージェントでデジタルツインを構築
 
-## Overview
+## 概要
 
-A 1-hour hands-on workshop where material engineers use [Claude Code](https://claude.ai/code) (an AI coding agent) to build and optimize MuJoCo physics simulations on an NVIDIA DGX Spark.
+素材エンジニアが [Claude Code](https://claude.ai/code)（AIコーディングエージェント）を使い、NVIDIA DGX Spark上でMuJoCo物理シミュレーションを構築・最適化する1時間のハンズオンワークショップです。
 
-No programming experience required. You tell the AI what to build in plain English, and it writes the code for you.
+プログラミング経験は不要です。AIにやりたいことを日本語で伝えるだけで、AIがコードを書いてくれます。
 
-## What You'll Build
+## 構築するもの
 
-A **Franka Panda robotic arm** holding a plate with a ball on top. Your goal: use Claude Code to assemble the simulation, test the physics, and optimize PID control parameters until the ball stays balanced for 10 seconds.
+**Franka Panda ロボットアーム**がプレートを持ち、その上にボールを載せたシミュレーションを構築します。目標：Claude Codeを使ってシミュレーションを組み立て、物理挙動をテストし、PID制御パラメータを最適化して、ボールを10秒間バランスさせることです。
 
-## Workshop Structure
+## ワークショップ構成
 
-| Sprint | Time | Goal | What You'll Do |
-|--------|------|------|----------------|
-| 1. Explore | 15 min | Understand the Robot | Run the pre-built simulation, move joints, build intuition |
-| 2. PID Discovery | 12 min | Teach the Robot to Balance | Run a broken controller, ask Claude to diagnose and fix it |
-| 3. Challenges | 8 min | Test Robustness | Add disturbances (pushes, oscillation) and see if the ball survives |
-| 4. Free Exploration | 25 min | Improve the Controller | Use the survival map as your scoreboard. Ask Claude to try better control strategies |
+| スプリント | 時間 | 目標 | 内容 |
+|--------|------|------|------|
+| 1. 探索 | 15分 | ロボットを理解する | 構築済みシミュレーションを実行し、関節を動かして直感を養う |
+| 2. PID発見 | 12分 | ロボットにバランスを教える | 動作しないコントローラを実行し、Claudeに診断・修正を依頼する |
+| 3. チャレンジ | 8分 | ロバスト性をテストする | 外乱（押す力、振動）を加えてボールが耐えられるか確認する |
+| 4. 自由探索 | 25分 | コントローラを改善する | サバイバルマップをスコアボードとして使い、Claudeにより良い制御戦略を試してもらう |
 
-## Prerequisites
+## 事前準備
 
-- **Visual Studio Code** installed on your laptop
-- **Remote - SSH** extension installed in VS Code
-- Connection details will be provided on a printed card at the workshop
+- **Visual Studio Code** をノートPCにインストール済みであること
+- **Remote - SSH** 拡張機能がVS Codeにインストール済みであること
+- 接続情報はワークショップ当日に印刷カードで配布されます
 
-## Repository Structure
+## リポジトリ構成
 
 ```
 physics-ai-workshop/
-├── content/                # Simulation models
-│   ├── ball_and_plate.xml  # Plate + ball (your balancing target)
-│   └── franka_panda/       # Franka Panda robotic arm (from MuJoCo Menagerie)
+├── content/                # シミュレーションモデル
+│   ├── ball_and_plate.xml  # プレート＋ボール（バランス対象）
+│   └── franka_panda/       # Franka Panda ロボットアーム（MuJoCo Menagerieより）
 ├── docs/
-│   ├── participant-guide.md    # Step-by-step workshop guide
-│   └── host-preparation-runbook.md  # For the workshop host/admin
-└── CLAUDE.md               # Context for Claude Code sessions
+│   ├── participant-guide.md    # ワークショップ参加者向けステップバイステップガイド
+│   └── host-preparation-runbook.md  # ワークショップ主催者・管理者向け
+└── CLAUDE.md               # Claude Codeセッション用のコンテキスト
 ```
 
-## Quick Start
+## クイックスタート
 
-After connecting via VS Code (see your printed card):
+VS Codeで接続後（印刷カードを参照）：
 
-1. Open a terminal: `Ctrl + ~`
-2. Verify your prompt shows `(workshop_env)`
-3. Navigate to your workspace:
+1. ターミナルを開く：`Ctrl + ~`
+2. プロンプトに `(workshop_env)` と表示されていることを確認
+3. ワークスペースに移動：
    ```bash
    cd ~/physics_sim
    ```
-4. Start Claude Code:
+4. Claude Codeを起動：
    ```bash
    claude
    ```
-5. Give your first instruction:
-   > "Run the 01_validate_assembly.py script and start the live stream so I can see the robot."
+5. 最初の指示を入力：
+   > 「01_validate_assembly.pyスクリプトを実行して、ライブ配信を開始して。ロボットを見たい。」
 
-## Simulation Content
+## シミュレーションコンテンツ
 
-### Franka Panda Arm
+### Franka Panda アーム
 
-A 7-DOF robotic arm from the [MuJoCo Menagerie](https://github.com/google-deepmind/mujoco_menagerie) — a collection of high-quality open-source robot models maintained by Google DeepMind. The model includes accurate meshes, joint limits, and dynamics parameters.
+[MuJoCo Menagerie](https://github.com/google-deepmind/mujoco_menagerie) から取得した7自由度ロボットアームです。MuJoCo Menagerieは、Google DeepMindが管理する高品質なオープンソースロボットモデルのコレクションです。正確なメッシュ、関節制限、動力学パラメータが含まれています。
 
-### Ball and Plate
+### ボールとプレート
 
-A minimal model defining a flat plate and a ball with a free joint. The workshop task is to attach this to the Panda's gripper and keep the ball balanced through PID control.
+フラットなプレートとフリージョイントを持つボールを定義した最小構成のモデルです。ワークショップの課題は、これをPandaのグリッパーに取り付け、PID制御でボールをバランスさせることです。
 
-## Resources
+## リソース
 
-- [MuJoCo Documentation](https://mujoco.readthedocs.io/)
+- [MuJoCo ドキュメント](https://mujoco.readthedocs.io/)
 - [MuJoCo Menagerie](https://github.com/google-deepmind/mujoco_menagerie)
 - [Claude Code](https://claude.ai/code)
-- [MuJoCo Python Bindings](https://mujoco.readthedocs.io/en/stable/python.html)
+- [MuJoCo Pythonバインディング](https://mujoco.readthedocs.io/en/stable/python.html)
 
-## License
+## ライセンス
 
-This workshop repository is licensed under [Apache 2.0](https://www.apache.org/licenses/LICENSE-2.0). The Franka Panda model is from [MuJoCo Menagerie](https://github.com/google-deepmind/mujoco_menagerie) (Apache 2.0, Copyright Google DeepMind).
+このワークショップリポジトリは [Apache 2.0](https://www.apache.org/licenses/LICENSE-2.0) ライセンスの下で公開されています。Franka Pandaモデルは [MuJoCo Menagerie](https://github.com/google-deepmind/mujoco_menagerie)（Apache 2.0、Copyright Google DeepMind）から取得しています。

@@ -1,11 +1,11 @@
-"""Controller Exploration Playground — Improve the ball-on-plate controller.
+"""コントローラー改善プレイグラウンド — ボールオンプレートのコントローラーを改善しよう。
 
-This file is your controller. Edit the make_controller() function to try
-different control strategies, then measure your improvement:
+このファイルがあなたのコントローラーです。make_controller()関数を編集して
+様々な制御戦略を試し、改善度を測定しましょう:
 
     python scripts/04_survival_map.py --controller scripts/05_challenge.py
 
-You can also run this file directly for a quick 10-second test:
+このファイルを直接実行して10秒間の簡易テストもできます:
 
     python scripts/05_challenge.py
 """
@@ -13,30 +13,30 @@ import numpy as np
 
 
 # ═══════════════════════════════════════════════════════════
-# YOUR CONTROLLER — Edit this section to improve performance
+# コントローラー — このセクションを編集して改善しよう
 # ═══════════════════════════════════════════════════════════
 #
-# Ask Claude to try these improvements (copy-paste to Claude):
+# 以下の改善案をClaudeにコピー＆ペーストしてください:
 #
-# Level 1 — Quick wins (expect score ~3.8-4.2):
-#   "Enable velocity feedback — set kd to a small positive value like 0.5"
-#   "Try different combinations of kp and kd values"
+# レベル1 — すぐできる改善（スコア ~3.8-4.2）:
+#   「kdを0.5くらいにして速度フィードバックを有効にして」
+#   「kpとkdの組み合わせをいろいろ試して」
 #
-# Level 2 — Smarter control (expect score ~4.2-5.0):
-#   "Use different gain values for the X and Y directions"
-#   "Make the correction stronger when the ball is near the edge of the plate"
+# レベル2 — もう少し賢い制御（スコア ~4.2-5.0）:
+#   「X方向とY方向で異なるゲインを使って」
+#   「ボールがプレートの端に近いときは補正を強くして」
 #
-# Level 3 — Advanced (expect score ~5.0+):
-#   "Add a slow integral correction to fix the ball drifting to one side"
-#   "Limit the maximum correction so the controller doesn't overreact"
+# レベル3 — 上級（スコア ~5.0以上）:
+#   「ボールが片側にずれていくのを積分補正で直して」
+#   「過剰な補正を防ぐためにリミッターをつけて」
 #
-# After editing, measure your improvement:
+# 編集後、改善度を測定:
 #   python scripts/04_survival_map.py --controller scripts/05_challenge.py
 # ═══════════════════════════════════════════════════════════
 
 
 class PIDController:
-    """Simple PID controller. You can modify this too."""
+    """シンプルなPIDコントローラー。これも変更可能です。"""
 
     def __init__(self, kp, ki, kd, dt):
         self.kp = kp
@@ -59,22 +59,22 @@ class PIDController:
 
 
 def make_controller(model, dt, home):
-    """Create a controller function. Called once per trial.
+    """コントローラー関数を作成。試行ごとに1回呼び出されます。
 
-    DO NOT change this function's name or arguments.
-    Edit the logic INSIDE this function.
+    この関数の名前や引数は変更しないでください。
+    この関数の中身のロジックを編集してください。
 
-    Arguments (provided by the evaluator):
-        model: MuJoCo model object
-        dt:    simulation timestep (0.005 seconds)
-        home:  list of 7 home joint positions
+    引数（評価器から提供されます）:
+        model: MuJoCoモデルオブジェクト
+        dt:    シミュレーションのタイムステップ（0.005秒）
+        home:  7つのホーム関節位置のリスト
 
-    Must return a function: controller(data, plate_id, ball_id, step, t)
-    that sets data.ctrl[5] and data.ctrl[6] (wrist joint commands).
+    戻り値: controller(data, plate_id, ball_id, step, t) 関数
+    data.ctrl[5]とdata.ctrl[6]（手首関節のコマンド）を設定する。
     """
-    # --- Your gains here ---
-    kp = 2.0   # How strongly to react to ball position
-    kd = 0.0   # How strongly to react to ball velocity (try > 0!)
+    # --- ゲインをここで設定 ---
+    kp = 2.0   # ボール位置への反応の強さ
+    kd = 0.0   # ボール速度への反応の強さ（0より大きくしてみよう！）
 
     pid_x = PIDController(kp, 0.0, kd, dt)
     pid_y = PIDController(kp, 0.0, kd, dt)
@@ -93,7 +93,7 @@ def make_controller(model, dt, home):
 
 
 # ═══════════════════════════════════════════════════════════
-# Standalone runner — only executes when run directly
+# 以下は編集しないでください — テスト用スタンドアロンランナー
 # ═══════════════════════════════════════════════════════════
 
 if __name__ == "__main__":
@@ -111,16 +111,16 @@ if __name__ == "__main__":
 
     # --- CLI ---
     parser = argparse.ArgumentParser(
-        description="Quick 10s test of your controller")
+        description="コントローラーの10秒間簡易テスト")
     parser.add_argument("--port", type=int, default=None,
-                        help="Streaming port (default: STREAM_PORT env var)")
+                        help="配信ポート（デフォルト: STREAM_PORT環境変数）")
     args = parser.parse_args()
 
-    print("Running quick test of your controller. For the full survival map, use:")
+    print("コントローラーの簡易テストを実行中。完全な維持マップを取得するには:")
     print("  python scripts/04_survival_map.py --controller scripts/05_challenge.py")
     print()
 
-    # --- Load model ---
+    # --- モデルの読み込み ---
     model = mujoco.MjModel.from_xml_path(
         os.path.join(_project_root, "content", "panda_ball_balance.xml"))
     dt = model.opt.timestep
@@ -134,7 +134,7 @@ if __name__ == "__main__":
     home = [0.0, -0.785, 0.0, -2.356, 1.184, 3.184, 1.158]
     joint_names = [f"joint{i}" for i in range(1, 8)]
 
-    # --- Create data and set home pose ---
+    # --- データ作成とホームポーズの設定 ---
     data = mujoco.MjData(model)
     for jn, val in zip(joint_names, home):
         jid = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, jn)
@@ -144,13 +144,13 @@ if __name__ == "__main__":
     data.ctrl[7] = 0.008
     mujoco.mj_forward(model, data)
 
-    # Place ball on plate
+    # ボールをプレート上に配置
     data.qpos[ball_qpos_addr:ball_qpos_addr + 3] = data.xpos[plate_id] + [0, 0, 0.025]
     data.qpos[ball_qpos_addr + 3:ball_qpos_addr + 7] = [1, 0, 0, 0]
     data.qvel[ball_qvel_addr:ball_qvel_addr + 6] = 0
     mujoco.mj_forward(model, data)
 
-    # --- Renderer and streamer ---
+    # --- レンダラーとストリーマー ---
     renderer = mujoco.Renderer(model, height=480, width=640)
     port_kwarg = {}
     if args.port is not None:
@@ -159,7 +159,7 @@ if __name__ == "__main__":
     streamer.start()
     cam = streamer.make_free_camera(model)
 
-    # --- Simulation parameters ---
+    # --- シミュレーションパラメータ ---
     duration = 10.0
     steps = int(duration / dt)
     fps = 30
@@ -167,7 +167,7 @@ if __name__ == "__main__":
 
     try:
         while True:
-            # Reset scene
+            # シーンをリセット
             mujoco.mj_resetData(model, data)
             for jn, val in zip(joint_names, home):
                 jid = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, jn)
@@ -182,43 +182,43 @@ if __name__ == "__main__":
             data.qvel[ball_qvel_addr:ball_qvel_addr + 6] = 0
             mujoco.mj_forward(model, data)
 
-            # Create controller for this trial
+            # この試行用のコントローラーを作成
             controller_fn = make_controller(model, dt, home)
             survival_time = duration
 
             for step in range(steps):
                 mujoco.mj_step(model, data)
 
-                # Hold non-PID joints at home
+                # PID以外の関節をホームに保持
                 for i in [0, 1, 2, 3, 4]:
                     data.ctrl[i] = home[i]
                 data.ctrl[7] = 0.008
 
-                # Run user controller
+                # ユーザーコントローラーを実行
                 t = step * dt
                 controller_fn(data, plate_id, ball_id, step, t)
 
-                # NaN check
+                # NaNチェック
                 if np.any(np.isnan(data.xpos[ball_id])):
                     survival_time = step * dt
                     break
 
-                # Ball off plate check
+                # ボール落下チェック
                 brel = data.xpos[ball_id] - data.xpos[plate_id]
                 if abs(brel[0]) > 0.14 or abs(brel[1]) > 0.14 or brel[2] < -0.02:
                     survival_time = (step + 1) * dt
                     break
 
-                # Render
+                # レンダリング
                 if step % render_every == 0:
                     streamer.drain_camera_commands(model, cam, renderer.scene)
                     renderer.update_scene(data, camera=cam)
                     streamer.update(renderer.render())
 
-            print(f"Survival Time: {survival_time:.1f} seconds")
+            print(f"維持時間: {survival_time:.1f} 秒")
             print()
 
     except KeyboardInterrupt:
-        print("\nStopped.")
+        print("\n停止しました。")
     finally:
         streamer.stop()

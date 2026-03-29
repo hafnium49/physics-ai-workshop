@@ -1,11 +1,11 @@
-"""Survival Map: sweep initial ball positions and visualize PID robustness.
+"""維持マップ: ボールの初期位置をグリッドで走査し、PIDの頑健性を可視化する。
 
-Places the ball at each point on a grid of offsets from plate center,
-runs a 10-second headless PID trial for each, and displays a contour
-plot of survival times. Green/yellow regions survive longer; dark
-regions mean the ball falls off quickly.
+プレート中心からのオフセットのグリッド上にボールを配置し、
+各点で10秒間のヘッドレスPID試行を実行し、維持時間の
+等高線プロットを表示する。緑/黄色の領域は長く維持でき、
+暗い領域はボールがすぐに落ちることを示す。
 
-Run with: python scripts/04_survival_map.py [--controller my_ctrl.py] [--kp 2] [--kd 0] [--grid 20]
+実行方法: python scripts/04_survival_map.py [--controller my_ctrl.py] [--kp 2] [--kd 0] [--grid 20]
 """
 import os
 import sys
@@ -25,6 +25,7 @@ try:
     import matplotlib
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
+    plt.rcParams['font.family'] = 'Noto Sans CJK JP'
     HAS_MATPLOTLIB = True
 except ImportError:
     HAS_MATPLOTLIB = False
@@ -58,7 +59,7 @@ class PIDController:
 
 
 def make_default_pid(model, dt, home):
-    """Default PID controller factory. Called once per trial."""
+    """デフォルトPIDコントローラーのファクトリ。試行ごとに1回呼び出される。"""
     pid_x = PIDController(KP, 0.0, KD, dt)
     pid_y = PIDController(KP, 0.0, KD, dt)
     def controller(data, plate_id, ball_id, step, t):
@@ -68,20 +69,20 @@ def make_default_pid(model, dt, home):
     return controller
 
 
-# --- CLI arguments ---
-parser = argparse.ArgumentParser(description="Survival map: sweep initial ball positions")
+# --- CLI引数 ---
+parser = argparse.ArgumentParser(description="維持マップ: ボールの初期位置を走査")
 parser.add_argument("--kp", type=float, default=2.0,
-                    help="Proportional gain (default: 2.0)")
+                    help="比例ゲイン（デフォルト: 2.0）")
 parser.add_argument("--kd", type=float, default=0.0,
-                    help="Derivative gain (default: 0.0)")
+                    help="微分ゲイン（デフォルト: 0.0）")
 parser.add_argument("--controller", type=str, default=None,
-                    help="Path to controller file with make_controller(model, dt, home) function")
+                    help="make_controller(model, dt, home)関数を持つコントローラーファイルのパス")
 parser.add_argument("--grid", type=int, default=20,
-                    help="Grid resolution NxN (default: 20)")
+                    help="グリッド解像度 NxN（デフォルト: 20）")
 parser.add_argument("--port", type=int, default=None,
-                    help="Streaming port (default: STREAM_PORT env var or 18080)")
+                    help="配信ポート（デフォルト: STREAM_PORT環境変数または18080）")
 parser.add_argument("--no-stream", action="store_true",
-                    help="Disable live streaming; save survival_map.png instead")
+                    help="ライブ配信を無効にし、survival_map.pngとして保存")
 args = parser.parse_args()
 stream_port = args.port if args.port is not None else int(os.environ.get("STREAM_PORT", 18080))
 
@@ -89,24 +90,24 @@ KP = args.kp
 KI = 0.0
 KD = args.kd
 
-# --- Check matplotlib early ---
+# --- matplotlibの早期チェック ---
 if not HAS_MATPLOTLIB:
-    print("ERROR: Survival map requires matplotlib. Install with: pip install matplotlib")
+    print("エラー: 維持マップにはmatplotlibが必要です。インストール: pip install matplotlib")
     sys.exit(1)
 
-# --- Setup ---
+# --- セットアップ ---
 model = mujoco.MjModel.from_xml_path(os.path.join(_project_root, "content", "panda_ball_balance.xml"))
 data = mujoco.MjData(model)
-dt = model.opt.timestep  # 0.005s = 200 Hz
+dt = model.opt.timestep  # 0.005秒 = 200 Hz
 
 plate_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, "plate")
 ball_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, "ball")
 
-# Home pose
+# ホームポーズ
 home = [0.0, -0.785, 0.0, -2.356, 1.184, 3.184, 1.158]
 joint_names = [f"joint{i}" for i in range(1, 8)]
 
-# Joint IDs (cached)
+# 関節ID（キャッシュ済み）
 joint_ids = {}
 for jn in joint_names:
     joint_ids[jn] = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, jn)
@@ -115,28 +116,28 @@ ball_joint_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, "ball_free")
 ball_qpos_addr = model.jnt_qposadr[ball_joint_id]
 ball_qvel_addr = model.jnt_dofadr[ball_joint_id]
 
-# --- Load controller ---
+# --- コントローラーの読み込み ---
 if args.controller:
     ctrl_path = os.path.abspath(args.controller)
     if not os.path.exists(ctrl_path):
-        print(f"ERROR: Controller file not found: {args.controller}")
+        print(f"エラー: コントローラーファイルが見つかりません: {args.controller}")
         sys.exit(1)
     try:
         spec = importlib.util.spec_from_file_location("user_controller", ctrl_path)
         _mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(_mod)
     except BaseException as e:
-        print(f"ERROR loading {args.controller}: {e}")
-        print("Copy this message and paste it to Claude to fix the issue.")
-        print("Falling back to default PID.\n")
+        print(f"エラー: {args.controller} の読み込みに失敗: {e}")
+        print("このメッセージをClaudeに貼り付けてください。")
+        print("デフォルトPIDにフォールバックします。\n")
         _mod = None
     if _mod and hasattr(_mod, 'make_controller'):
         make_ctrl = _mod.make_controller
         controller_name = os.path.basename(args.controller)
     else:
         if _mod:
-            print(f"ERROR: {args.controller} must define make_controller(model, dt, home)")
-            print("Falling back to default PID.\n")
+            print(f"エラー: {args.controller} にはmake_controller(model, dt, home)を定義する必要があります")
+            print("デフォルトPIDにフォールバックします。\n")
         make_ctrl = make_default_pid
         controller_name = f"PID (Kp={KP}, Kd={KD})"
 else:
@@ -145,12 +146,12 @@ else:
 
 
 def run_headless_trial(x0, y0, make_ctrl_fn):
-    """Run one headless trial with ball at (x0, y0) offset from plate center.
+    """ボールを(x0, y0)オフセットに配置してヘッドレス試行を1回実行する。
 
-    Returns survival time in seconds (max 10.0).
+    維持時間を秒で返す（最大10.0）。
     """
     d = mujoco.MjData(model)
-    # Set home pose
+    # ホームポーズを設定
     for jn, val in zip(joint_names, home):
         jid = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, jn)
         d.qpos[model.jnt_qposadr[jid]] = val
@@ -158,14 +159,14 @@ def run_headless_trial(x0, y0, make_ctrl_fn):
         d.ctrl[i] = val
     d.ctrl[7] = 0.008
     mujoco.mj_forward(model, d)
-    # Place ball with offset
+    # オフセット付きでボールを配置
     ba = model.jnt_qposadr[ball_joint_id]
     bv = model.jnt_dofadr[ball_joint_id]
     d.qpos[ba:ba+3] = d.xpos[plate_id] + [x0, y0, 0.025]
     d.qpos[ba+3:ba+7] = [1, 0, 0, 0]
     d.qvel[bv:bv+6] = 0
     mujoco.mj_forward(model, d)
-    # Run controller
+    # コントローラーを実行
     controller_fn = make_ctrl_fn(model, dt, home)
     max_steps = int(10.0 / dt)
     for step in range(max_steps):
@@ -187,7 +188,7 @@ def run_headless_trial(x0, y0, make_ctrl_fn):
 
 
 def run_survival_grid(grid_n, make_ctrl_fn):
-    """Run grid_n x grid_n headless trials. Returns (xs, ys, survival_grid)."""
+    """grid_n x grid_nのヘッドレス試行を実行する。(xs, ys, survival_grid)を返す。"""
     xs = np.linspace(-0.12, 0.12, grid_n)
     ys = np.linspace(-0.12, 0.12, grid_n)
     grid = np.zeros((grid_n, grid_n))
@@ -196,35 +197,35 @@ def run_survival_grid(grid_n, make_ctrl_fn):
         for j, x0 in enumerate(xs):
             grid[i, j] = run_headless_trial(x0, y0, make_ctrl_fn)
         done = (i + 1) * grid_n
-        print(f"  Progress: {done}/{total} trials ({done*100//total}%)")
+        print(f"  進捗: {done}/{total} 試行 ({done*100//total}%)")
     return xs, ys, grid
 
 
 def render_survival_map(xs, ys, survival_grid, controller_name):
-    """Render contour plot to (H, W, 3) numpy array."""
+    """等高線プロットを(H, W, 3)のnumpy配列としてレンダリングする。"""
     fig, ax = plt.subplots(figsize=(6.4, 4.8), dpi=100)
-    XX, YY = np.meshgrid(xs * 1000, ys * 1000)  # convert to mm
+    XX, YY = np.meshgrid(xs * 1000, ys * 1000)  # mmに変換
     levels = np.linspace(0, 10, 21)
     cf = ax.contourf(XX, YY, survival_grid, levels=levels, cmap='viridis')
-    fig.colorbar(cf, label='Survival time (s)')
-    ax.set_xlabel('Initial X offset (mm)')
-    ax.set_ylabel('Initial Y offset (mm)')
-    ax.set_title(f'Survival Map ({controller_name})')
+    fig.colorbar(cf, label='維持時間 (秒)')
+    ax.set_xlabel('初期Xオフセット (mm)')
+    ax.set_ylabel('初期Yオフセット (mm)')
+    ax.set_title(f'維持マップ ({controller_name})')
     ax.set_aspect('equal')
-    # Plate boundary
+    # プレート境界
     rect = plt.Rectangle((-140, -140), 280, 280, fill=False,
                          edgecolor='white', linewidth=1.5, linestyle='--')
     ax.add_patch(rect)
-    # Mark sweet spot
+    # 最適位置をマーク
     best_idx = np.unravel_index(survival_grid.argmax(), survival_grid.shape)
     ax.plot(xs[best_idx[1]] * 1000, ys[best_idx[0]] * 1000, 'w*', markersize=15)
-    # Score annotation
+    # スコア注釈
     score = survival_grid.mean()
     perfect = int((survival_grid >= 9.9).sum())
     total = survival_grid.size
-    annotation = f"Score: {score:.1f} sec\nPerfect: {perfect}/{total} ({perfect*100/total:.1f}%)"
+    annotation = f"スコア: {score:.1f} 秒\n完全維持: {perfect}/{total} ({perfect*100/total:.1f}%)"
     ax.text(0.02, 0.98, annotation, transform=ax.transAxes, fontsize=10,
-            verticalalignment='top', fontfamily='monospace',
+            verticalalignment='top',
             bbox=dict(boxstyle='round,pad=0.4', facecolor='white', alpha=0.8))
     fig.tight_layout()
     fig.canvas.draw()
@@ -236,19 +237,19 @@ def render_survival_map(xs, ys, survival_grid, controller_name):
 
 
 # ============================================================
-# Main
+# メイン
 # ============================================================
-print(f"=== Survival Map ({args.grid}x{args.grid} grid, {controller_name}) ===")
-print(f"Computing survival map...")
+print(f"=== 維持マップ ({args.grid}x{args.grid} グリッド, {controller_name}) ===")
+print(f"維持マップを計算中...")
 
-# Probe trial at center
-print(f"Controller: {controller_name}")
+# 中心位置での試行
+print(f"コントローラー: {controller_name}")
 probe_t = run_headless_trial(0, 0, make_ctrl)
 if probe_t < 0.01:
-    print(f"WARNING: Controller failed immediately at center position (survived {probe_t:.3f}s)")
-    print("The controller may have a bug. Copy this message and paste it to Claude.")
+    print(f"警告: コントローラーが直ちに失敗しました（中心位置での維持時間 {probe_t:.3f}秒）")
+    print("コントローラーにバグがある可能性があります。このメッセージをClaudeに貼り付けてください。")
     if args.controller:
-        print("Falling back to default PID.\n")
+        print("デフォルトPIDにフォールバックします。\n")
         make_ctrl = make_default_pid
         controller_name = f"PID (Kp={KP}, Kd={KD})"
 
@@ -259,31 +260,31 @@ perfect = int((grid >= 9.9).sum())
 total = args.grid ** 2
 best_idx = np.unravel_index(grid.argmax(), grid.shape)
 
-print(f"\n  ╔══════════════════════════════════╗")
-print(f"  ║  Controller Score: {score:.1f} sec  ║")
-print(f"  ╚══════════════════════════════════╝")
-print(f"  Perfect positions: {perfect}/{total} ({perfect*100/total:.1f}%)")
-print(f"  Max survival: {grid.max():.1f}s at offset ({xs[best_idx[1]]*1000:.0f}mm, {ys[best_idx[0]]*1000:.0f}mm)")
+print(f"\n  ╔════════════════════════╗")
+print(f"  ║  スコア: {score:.1f} 秒       ║")
+print(f"  ╚════════════════════════╝")
+print(f"  完全維持: {perfect}/{total} ({perfect*100/total:.1f}%)")
+print(f"  最大維持: {grid.max():.1f}秒 オフセット ({xs[best_idx[1]]*1000:.0f}mm, {ys[best_idx[0]]*1000:.0f}mm)")
 
 map_img = render_survival_map(xs, ys, grid, controller_name)
 
 # ============================================================
-# No-stream mode: save PNG and exit
+# ストリーム無効モード: PNGを保存して終了
 # ============================================================
 if args.no_stream or not HAS_STREAMER:
     if not args.no_stream and not HAS_STREAMER:
-        print("WARNING: mujoco_streamer not installed, falling back to PNG output")
+        print("警告: mujoco_streamerがインストールされていません。PNG出力にフォールバックします")
 
     from PIL import Image
     Image.fromarray(map_img).save("survival_map.png")
-    print(f"Saved: survival_map.png ({args.grid}x{args.grid} grid)")
+    print(f"保存しました: survival_map.png ({args.grid}x{args.grid} グリッド)")
 
 # ============================================================
-# Streaming mode: display contour plot in browser
+# 配信モード: ブラウザに等高線プロットを表示
 # ============================================================
 else:
-    print(f"Starting live stream on port {stream_port}...")
-    print("Displaying survival map. Press Ctrl+C to stop.")
+    print(f"ポート {stream_port} でライブ配信を開始中...")
+    print("維持マップを表示中。Ctrl+Cで停止します。")
 
     streamer = LiveStreamer(port=stream_port)
     streamer.start()
@@ -293,6 +294,6 @@ else:
             streamer.update(map_img)
             time.sleep(1.0 / 30)
     except KeyboardInterrupt:
-        print("\nStreaming stopped.")
+        print("\n配信を停止しました。")
     finally:
         streamer.stop()

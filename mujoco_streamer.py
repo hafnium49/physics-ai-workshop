@@ -1,19 +1,19 @@
 """
-MuJoCo MJPEG Live Streamer with Interactive Camera Control
+MuJoCo MJPEGライブストリーマー（インタラクティブカメラ制御付き）
 
-Streams MuJoCo simulation frames as MJPEG over HTTP for browser viewing.
-Browser mouse/touch events control the camera via POST /camera.
+MuJoCoシミュレーションのフレームをHTTP経由でMJPEGとしてブラウザに配信する。
+ブラウザのマウス/タッチイベントでPOST /camera経由でカメラを制御できる。
 
-IMPORTANT: Render frames on the simulation thread only. Do not call
-renderer.render() from the HTTP handler thread — OpenGL contexts are
-not thread-safe. Pass the already-rendered numpy array to streamer.update().
+重要: フレームのレンダリングはシミュレーションスレッドでのみ行うこと。
+HTTPハンドラスレッドからrenderer.render()を呼ばないこと — OpenGLコンテキストは
+スレッドセーフではない。レンダリング済みのnumpy配列をstreamer.update()に渡すこと。
 
-Usage:
+使い方:
     from mujoco_streamer import LiveStreamer
     streamer = LiveStreamer()
     streamer.start()
     cam = streamer.make_free_camera(model)
-    # In simulation loop:
+    # シミュレーションループ内:
     streamer.drain_camera_commands(model, cam, renderer.scene)
     renderer.update_scene(data, camera=cam)
     streamer.update(renderer.render())
@@ -32,7 +32,7 @@ from PIL import Image
 
 
 class _StreamState:
-    """Thread-safe single-slot frame buffer. Constant memory — no queue."""
+    """スレッドセーフな単一スロットフレームバッファ。メモリ一定 — キューなし。"""
 
     def __init__(self):
         self._condition = threading.Condition()
@@ -56,9 +56,12 @@ class _StreamingServer(ThreadingMixIn, HTTPServer):
     allow_reuse_address = True
 
 
-_HTML_PAGE = b"""\
+_HTML_PAGE = """\
 <html>
-<head><title>MuJoCo Live</title></head>
+<head>
+<meta charset="utf-8">
+<title>MuJoCo ライブ</title>
+</head>
 <body style="margin:0; background:#1a1a2e; display:flex; flex-direction:column;
              align-items:center; justify-content:center; height:100vh;
              font-family:system-ui; color:#eee; user-select:none;">
@@ -84,13 +87,13 @@ _HTML_PAGE = b"""\
   </div>
 
   <p style="margin-top:12px; font-size:14px; opacity:0.6;">
-    Physics-AI Workshop \\xe2\\x80\\x94 Live Simulation
-    &nbsp;|&nbsp; Left-drag: orbit &nbsp; Scroll: zoom &nbsp; Right-drag: pan
-    &nbsp;|&nbsp; R: reset camera
+    物理AIワークショップ — ライブシミュレーション
+    &nbsp;|&nbsp; 左ドラッグ: 回転 &nbsp; スクロール: ズーム &nbsp; 右ドラッグ: 移動
+    &nbsp;|&nbsp; R: カメラリセット
   </p>
 
   <script>
-    // -- Stream & FPS --
+    // -- ストリーム & FPS --
     const img = document.getElementById('stream');
     const fpsEl = document.getElementById('fps');
     const statusEl = document.getElementById('status');
@@ -98,7 +101,7 @@ _HTML_PAGE = b"""\
     img.onload = () => { frameCount++; };
     img.onerror = () => {
       statusEl.style.color = '#f87171';
-      fpsEl.textContent = 'reconnecting...';
+      fpsEl.textContent = '再接続中...';
       setTimeout(() => { img.src = '/stream?' + Date.now(); }, 1000);
     };
     setInterval(() => {
@@ -108,14 +111,14 @@ _HTML_PAGE = b"""\
       frameCount = 0; lastTime = now;
     }, 1000);
 
-    // -- Camera control state --
+    // -- カメラ制御の状態 --
     const ctrl = document.getElementById('controls');
     let activeButton = -1, lastX = 0, lastY = 0;
     let pendingRotate = null, pendingPan = null, pendingZoom = 0;
     let inflight = false, lastSendTime = 0;
     const MIN_SEND_INTERVAL = 33;
 
-    // -- Pointer events --
+    // -- ポインターイベント --
     ctrl.addEventListener('pointerdown', (e) => {
       if (e.button !== 0 && e.button !== 2) return;
       activeButton = e.button;
@@ -147,16 +150,16 @@ _HTML_PAGE = b"""\
       activeButton = -1; ctrl.style.cursor = 'grab';
     });
 
-    // -- Scroll -> zoom --
+    // -- スクロール -> ズーム --
     ctrl.addEventListener('wheel', (e) => {
       e.preventDefault();
       pendingZoom += Math.max(-1, Math.min(1, -e.deltaY / 100));
     }, {passive: false});
 
-    // -- Context menu suppression --
+    // -- コンテキストメニューの抑制 --
     ctrl.addEventListener('contextmenu', (e) => e.preventDefault());
 
-    // -- Throttled send loop --
+    // -- スロットル付き送信ループ --
     function sendLoop() {
       requestAnimationFrame(sendLoop);
       const now = performance.now();
@@ -184,7 +187,7 @@ _HTML_PAGE = b"""\
     }
     requestAnimationFrame(sendLoop);
 
-    // -- Keyboard: R to reset --
+    // -- キーボード: Rでリセット --
     document.addEventListener('keydown', (e) => {
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
       if (e.key === 'r' || e.key === 'R') {
@@ -198,24 +201,24 @@ _HTML_PAGE = b"""\
   </script>
 </body>
 </html>
-"""
+""".encode("utf-8")
 
 BOUNDARY = b"FRAME"
 
 
 class LiveStreamer:
     """
-    MJPEG live streamer for MuJoCo simulations with interactive camera.
+    MuJoCoシミュレーション用MJPEGライブストリーマー（インタラクティブカメラ付き）。
 
-    Public API:
+    公開API:
         streamer = LiveStreamer()
         streamer.start()
         cam = streamer.make_free_camera(model)
-        # In loop:
+        # ループ内:
         streamer.drain_camera_commands(model, cam, renderer.scene)
         renderer.update_scene(data, camera=cam)
         streamer.update(renderer.render())
-        # Cleanup:
+        # クリーンアップ:
         streamer.stop()
     """
 
@@ -228,24 +231,24 @@ class LiveStreamer:
         self._server = None
         self._server_thread = None
         self._camera_commands = collections.deque(maxlen=256)
-        self._initial_cam_state = None  # set by make_free_camera for reset
+        self._initial_cam_state = None  # make_free_cameraでリセット用に設定
 
     def make_free_camera(self, model, named="side"):
-        """Create a persistent free camera initialized from the model defaults.
+        """モデルのデフォルトから初期化された永続的なフリーカメラを作成する。
 
-        Args:
-            model: MjModel instance
-            named: name of XML camera to approximate (used only for reference;
-                   the free camera uses model.stat for its initial pose)
+        引数:
+            model: MjModelインスタンス
+            named: 近似するXMLカメラの名前（参照用のみ;
+                   フリーカメラはmodel.statで初期ポーズを設定）
 
-        Returns:
-            mujoco.MjvCamera set to mjCAMERA_FREE
+        戻り値:
+            mjCAMERA_FREEに設定されたmujoco.MjvCamera
         """
         import mujoco
         cam = mujoco.MjvCamera()
         cam.type = mujoco.mjtCamera.mjCAMERA_FREE
         mujoco.mjv_defaultFreeCamera(model, cam)
-        # Save initial state for reset
+        # リセット用に初期状態を保存
         self._initial_cam_state = {
             "azimuth": cam.azimuth,
             "elevation": cam.elevation,
@@ -255,15 +258,15 @@ class LiveStreamer:
         return cam
 
     def drain_camera_commands(self, model, cam, scene):
-        """Apply pending camera commands from the browser.
+        """ブラウザからの保留中のカメラコマンドを適用する。
 
-        Call this from the simulation thread before renderer.update_scene().
-        Safe to call even if no commands are pending.
+        renderer.update_scene()の前にシミュレーションスレッドから呼び出すこと。
+        保留中のコマンドがなくても安全に呼び出せる。
 
-        Args:
-            model: MjModel instance
-            cam: MjvCamera instance (must be mjCAMERA_FREE)
-            scene: MjvScene instance (renderer.scene)
+        引数:
+            model: MjModelインスタンス
+            cam: MjvCameraインスタンス（mjCAMERA_FREEである必要あり）
+            scene: MjvSceneインスタンス（renderer.scene）
         """
         import mujoco
         while self._camera_commands:
@@ -287,7 +290,7 @@ class LiveStreamer:
                 cam.lookat[:] = self._initial_cam_state["lookat"]
 
     def start(self):
-        """Start the HTTP server in a daemon thread."""
+        """デーモンスレッドでHTTPサーバーを起動する。"""
         self._running = True
 
         stream_state = self._stream_state
@@ -362,25 +365,25 @@ class LiveStreamer:
         try:
             self._server = _StreamingServer(("0.0.0.0", self._port), _MJPEGHandler)
         except OSError:
-            print(f"\nERROR: Port {self._port} already in use.")
-            print("Stop the other script first (Ctrl+C), then re-run this script.")
+            print(f"\nエラー: ポート {self._port} は既に使用中です。")
+            print("先に他のスクリプトを停止してください（Ctrl+C）、その後再実行してください。")
             raise SystemExit(1)
         self._server_thread = threading.Thread(
             target=self._server.serve_forever, daemon=True
         )
         self._server_thread.start()
         print(
-            f"MuJoCo streamer running — open http://localhost:{self._port} in your browser"
+            f"MuJoCo配信中 — ブラウザで開いてください: http://localhost:{self._port}"
         )
 
     def update(self, rgb_array):
-        """Push a new frame. Fast and non-blocking."""
+        """新しいフレームをプッシュする。高速でノンブロッキング。"""
         self._stream_state.set_frame(rgb_array)
 
     def stop(self):
-        """Shut down the server cleanly."""
+        """サーバーをクリーンにシャットダウンする。"""
         self._running = False
-        # Wake any threads waiting in get_frame()
+        # get_frame()で待機中のスレッドを起こす
         with self._stream_state._condition:
             self._stream_state._condition.notify_all()
         if self._server is not None:

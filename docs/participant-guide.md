@@ -77,9 +77,9 @@ The simulation model is already pre-built — a Franka Panda robotic arm holding
 
 ### Step 1 — See the robot
 
-Copy and paste this into Claude:
+Tell Claude:
 
-> Read the panda_ball_balance.xml model file. Write a Python script that loads this model, places the ball on the plate, and streams the simulation live using the mujoco_streamer.py helper on my assigned port. Hold the arm at the home pose. Let me watch the ball fall off naturally.
+> Run scripts/01_validate_assembly.py and start the live stream.
 
 Watch the browser — you'll see the robot arm, the plate, and the ball rolling off. That's expected! The arm isn't actively balancing yet.
 
@@ -87,75 +87,85 @@ Watch the browser — you'll see the robot arm, the plate, and the ball rolling 
 
 Now tell Claude:
 
-> Stop the simulation. I want to understand the robot's joints. Write a new script that moves joint 6 slowly back and forth by 0.1 radians while streaming live. Then do the same for joint 7 and joint 5, one at a time. Tell me what each joint does to the plate.
+> Stop the simulation. Move joint 6 slowly, then joint 7, then joint 5. Which ones tilt the plate?
 
 Watch each joint move. Notice which ones tilt the plate and which ones barely do anything. **This matters for the next sprint.**
 
 ---
 
-## Sprint 2: Teach the Robot to Balance (15 minutes)
+## Sprint 2: PID Discovery (12 minutes)
 
-**Goal:** Build a controller that keeps the ball on the plate.
+**Goal:** Discover why the baseline controller fails and fix it.
 
-### Step 1 — First attempt
+### Step 1 — Run the broken controller
 
 Tell Claude:
 
-> Write a PID controller that tries to keep the ball centered on the plate. Use the ball's position relative to the plate center as the error signal. Pick whichever wrist joints you think control the plate tilt. Stream the simulation live and print "Survival Time: X.X seconds" when the ball falls off. Auto-reset and try again.
+> Run scripts/02_pid_baseline.py and start the live stream.
 
-Watch the live stream. The ball will probably fall off quickly. Look at the **Survival Time** printed in the terminal.
+Watch the live stream. The ball falls off in less than 1 second. Look at the **Survival Time** printed in the terminal.
 
 ### Step 2 — Diagnose and fix
 
-If the ball falls off fast (under 2 seconds), ask Claude:
+Tell Claude:
 
-> The ball fell off in less than 2 seconds. Can you check which joints actually move the plate? Try nudging each wrist joint by a small amount and measure how much the plate position changes. Then switch to the joints that have the most effect.
+> The ball keeps falling off immediately. Can you check which joints actually control the plate tilt? And check if the correction sign is right.
 
-Claude will test each joint's authority over the plate and discover the right ones. Once it switches to the correct joints and sign, survival time should jump dramatically.
+Claude will analyze the joints and the correction direction. Once it finds the right joints and fixes the sign, survival time should jump to 10 seconds.
 
-### Step 3 — Confirm it works
+### Step 3 — Understand what changed
 
-Once the ball stays on for 10 seconds:
+Tell Claude:
 
-> Great! The ball is balancing. Can you explain which joints you're controlling and why? What did you change from the first attempt?
+> Explain what you changed and why.
 
 This is the key insight: **which joints to control and the sign of the correction matter more than the gain values.**
 
 ---
 
-## Sprint 3: Progressive Challenges (30 minutes)
+## Sprint 3: Challenges (8 minutes)
 
-**Goal:** Make the balancing robust under disturbances.
+**Goal:** Test the controller under disturbances.
 
 Now that the ball stays balanced on a still plate, let's make it harder.
 
-### Challenge 1 — Survive a push
+Tell Claude:
 
-> Add random force disturbances that push the ball sideways every 2 seconds. Start with a force magnitude of 0.5 Newtons. Stream it live and print survival time. Does the ball still stay on the plate for 10 seconds?
+> Run scripts/04_challenge.py --level 2 and start the live stream.
 
-If the ball falls off, ask Claude to tune the gains:
+Watch the ball get pushed around by random forces. Does it survive?
 
-> The ball survived 4 seconds with force 0.5N. Try increasing Kp or Kd to make the controller react faster. Run several experiments and tell me which gains work best.
+**Optional:** Try Level 3 (oscillation):
 
-### Challenge 2 — Stronger pushes
+> Run scripts/04_challenge.py --level 3 and start the live stream.
 
-> Increase the disturbance force to 1.0 Newton. Adjust the gains to compensate. What's the highest force the ball can survive for 10 seconds?
+---
 
-### Challenge 3 (advanced) — Oscillating plate
+## Sprint 4: Free Exploration (25 minutes)
 
-> Add a slow sinusoidal oscillation to the plate — make the arm rock the plate in a small circle while still keeping the ball centered. Start at 0.5 Hz. Can the ball survive 10 seconds?
+**Goal:** Improve the controller beyond basic PID.
 
-### Challenge 4 (advanced) — Survival Map
+### Get your baseline
 
-> Run a survival map experiment: drop the ball at many different starting positions across the plate and record how long it survives at each. Generate a contour plot showing the controller's "basin of attraction." Where on the plate can the ball survive? Where does it always fall off?
+Tell Claude:
 
-### Bonus — Competition
+> Run scripts/05_survival_map.py and show me the survival map.
 
-If time allows, try to beat other participants:
+The survival map shows where the ball can start on the plate and survive 10 seconds (green) vs. where it falls off (red). Your goal: **make the green zone cover more of the plate.**
 
-- **Highest disturbance force survived for 10 seconds**
-- **Largest green zone on the survival map** (try different Kp values)
-- **Longest survival time with oscillation enabled**
+### Try improvements
+
+Here are some things you can ask Claude in plain English:
+
+- *"Can you try different PID gain values and compare survival maps?"*
+- *"The ball keeps falling off when it starts near the edge. Can you make the controller react faster when the ball is far from center?"*
+- *"Is there a better control method than PID? Can you try one and compare?"*
+- *"Can the controller predict where the ball is going instead of just reacting?"*
+- *"What if the gains were different for X vs Y directions?"*
+
+### Competition
+
+How many grid positions survive 10 seconds? Check with other participants!
 
 Feel free to ask Claude anything along the way:
 - *"What is PID control?"*

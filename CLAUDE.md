@@ -36,9 +36,10 @@ Build a Franka Panda arm holding a plate with a ball, then optimize PID control 
 
 ### Sprint Structure
 
-1. **Explore** (15 min) — Load the pre-assembled model, start live stream, move joints to build intuition
-2. **PID Discovery** (15 min) — Write a PID controller, discover which joints actually tilt the plate
-3. **Progressive Challenges** (30 min) — Add disturbances, tune gains under perturbation, push difficulty
+1. **Explore** (15 min) — Run the pre-assembled model, start live stream, move joints to build intuition
+2. **PID Discovery** (12 min) — Run the baseline PID (wrong sign), diagnose with Claude, discover the correct joints and sign
+3. **Challenges** (8 min) — Run disturbance challenges to test PID robustness
+4. **Free Exploration** (25 min) — Improve the controller beyond basic PID. Use the survival map (`05_survival_map.py`) as the metric to measure progress
 
 ## Live Visualization
 

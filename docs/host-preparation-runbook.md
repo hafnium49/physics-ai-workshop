@@ -57,6 +57,7 @@ for i in {1..5}; do
     # Adjust the source path to where you cloned the physics-ai-workshop repo
     sudo cp -r /path/to/physics-ai-workshop/content/* /home/engineer$i/physics_sim/
     sudo cp /path/to/physics-ai-workshop/mujoco_streamer.py /home/engineer$i/physics_sim/
+    sudo cp -r /path/to/physics-ai-workshop/scripts /home/engineer$i/physics_sim/scripts/
 
     # 7. Set per-user streaming port to avoid collisions
     echo "export STREAM_PORT=1808$i" | sudo tee -a /home/engineer$i/.bashrc > /dev/null
@@ -78,7 +79,7 @@ done
 
 > **Replace** `<WORKSHOP_PASSWORD>` with the actual password for each user. For better security, generate unique passwords per user (see your SSH setup scripts).
 
-> **Important:** Do NOT copy the `scripts/` directory into participant workspaces. The reference scripts contain spoiler comments (e.g., "DELIBERATE BASELINE BUG") that would short-circuit the discovery process if Claude reads them. Participants build their own scripts from scratch.
+> **Note:** The `scripts/` directory contains reference scripts with spoiler comments. These are intentionally provided so participants can run them and focus on the exploration sprint.
 
 ---
 

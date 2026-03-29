@@ -91,6 +91,26 @@ Drop the ball at many different starting positions across the plate (e.g., a 20x
 ### Comparative Experiments
 Run multiple parameter values, record survival time for each, report the best. Useful for finding the gain sweet spot or comparing survival maps across different PID gains.
 
+## Sprint 4: Free Exploration
+
+Participants have a working PID controller and use the survival map (`05_survival_map.py`) as their metric. They ask Claude to improve the controller. The survival map shows a 2D contour plot of ball survival time as a function of initial position — the goal is to expand the green zone (10-second survival region).
+
+### Approaches to suggest when asked to improve the controller
+- **Gain tuning**: Systematically try different Kp and Kd values, compare survival maps
+- **Nonlinear gains**: Use stronger corrections when the ball is far from center, gentler when close
+- **Velocity feedback**: Use ball velocity (not just position) to predict where the ball is going
+- **Feedforward compensation**: Account for known physics (gravity, plate geometry) proactively
+- **Multi-joint control**: Use additional wrist joints beyond the primary two
+- **Model predictive control**: Optimize a sequence of future actions rather than reacting to the current error
+
+### How to evaluate improvements
+Run `05_survival_map.py` with the participant's modified controller. Compare the number of grid positions surviving 10 seconds against the baseline (~38/400 with Kp=2, Kd=0).
+
+### Important notes
+- Let the participant describe what they want in plain English — do NOT require control theory jargon
+- Always run the survival map after making changes so the participant can see the effect
+- If an approach fails to implement, fall back to gain tuning (systematically try many Kp/Kd values)
+
 ## Streaming and Interactive Camera
 
 - Create a free camera with `cam = streamer.make_free_camera(model)` after `streamer.start()`

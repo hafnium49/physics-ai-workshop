@@ -16,9 +16,10 @@ A **Franka Panda robotic arm** holding a plate with a ball on top. Your goal: us
 
 | Sprint | Time | Goal | What You'll Do |
 |--------|------|------|----------------|
-| 1. Assembly | 15 min | Build the World | Tell Claude to combine the Panda arm with the plate and ball models |
-| 2. Baseline | 15 min | Test Physics | Drop the ball, apply basic PID control, observe what happens |
-| 3. Optimization | 30 min | Autonomous R&D | Let Claude tune the control parameters (Kp, Kd) until the ball stays centered |
+| 1. Explore | 15 min | Understand the Robot | Run the pre-built simulation, move joints, build intuition |
+| 2. PID Discovery | 12 min | Teach the Robot to Balance | Run a broken controller, ask Claude to diagnose and fix it |
+| 3. Challenges | 8 min | Test Robustness | Add disturbances (pushes, oscillation) and see if the ball survives |
+| 4. Free Exploration | 25 min | Improve the Controller | Use the survival map as your scoreboard. Ask Claude to try better control strategies |
 
 ## Prerequisites
 
@@ -54,7 +55,7 @@ After connecting via VS Code (see your printed card):
    claude
    ```
 5. Give your first instruction:
-   > "Read the Panda robot XML and the ball_and_plate.xml. Combine them so the plate is attached to the robot's end-effector with the ball on top. Run a simulation and save it as simulation.mp4"
+   > "Run the 01_validate_assembly.py script and start the live stream so I can see the robot."
 
 ## Simulation Content
 

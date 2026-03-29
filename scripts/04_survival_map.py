@@ -177,7 +177,7 @@ def run_headless_trial(x0, y0, make_ctrl_fn):
         d.ctrl[7] = 0.008
         try:
             controller_fn(d, plate_id, ball_id, step, step * dt)
-        except Exception:
+        except BaseException:
             return step * dt
         brel = d.xpos[ball_id] - d.xpos[plate_id]
         ex, ey = brel[0], brel[1]

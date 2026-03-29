@@ -7,7 +7,7 @@
 
 Uses CORRECT joints and sign: joint6 (ctrl[5]) for X, joint7 (ctrl[6]) for Y, POSITIVE sign.
 
-Run with: python scripts/04_challenge.py --level 2 --kp 2 --kd 0 [--force 1.0] [--freq 0.5]
+Run with: python scripts/05_challenge.py --level 2 --kp 2 --kd 0 [--force 1.0] [--freq 0.5]
 """
 import os
 import sys

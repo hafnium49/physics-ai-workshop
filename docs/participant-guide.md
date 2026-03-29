@@ -131,13 +131,13 @@ Now that the ball stays balanced on a still plate, let's make it harder.
 
 Tell Claude:
 
-> Run scripts/04_challenge.py --level 2 and start the live stream.
+> Run scripts/05_challenge.py --level 2 and start the live stream.
 
 Watch the ball get pushed around by random forces. Does it survive?
 
 **Optional:** Try Level 3 (oscillation):
 
-> Run scripts/04_challenge.py --level 3 and start the live stream.
+> Run scripts/05_challenge.py --level 3 and start the live stream.
 
 ---
 
@@ -149,7 +149,7 @@ Watch the ball get pushed around by random forces. Does it survive?
 
 Tell Claude:
 
-> Run scripts/05_survival_map.py and show me the survival map.
+> Run scripts/04_survival_map.py and show me the survival map.
 
 The survival map shows where the ball can start on the plate and survive 10 seconds (green) vs. where it falls off (red). Your goal: **make the green zone cover more of the plate.**
 
@@ -157,11 +157,14 @@ The survival map shows where the ball can start on the plate and survive 10 seco
 
 Here are some things you can ask Claude in plain English:
 
-- *"Can you try different PID gain values and compare survival maps?"*
-- *"The ball keeps falling off when it starts near the edge. Can you make the controller react faster when the ball is far from center?"*
-- *"Is there a better control method than PID? Can you try one and compare?"*
-- *"Can the controller predict where the ball is going instead of just reacting?"*
-- *"What if the gains were different for X vs Y directions?"*
+- *"Write a controller that reacts faster when the ball is near the edge. Test it on the survival map."*
+- *"Create a controller that uses the ball's speed, not just position. Save it and run the survival map."*
+- *"Is there a better method than PID? Write one and compare the survival maps."*
+- *"My controller gets 38 out of 400. Can you write one that does better?"*
+
+> Claude will create a controller file and tell you the exact command to run, e.g.: `python scripts/04_survival_map.py --controller my_controller.py`
+
+Always use the live stream for the survival map — do not use `--no-stream`.
 
 ### Competition
 

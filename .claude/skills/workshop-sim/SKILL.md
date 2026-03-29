@@ -93,7 +93,7 @@ Run multiple parameter values, record survival time for each, report the best. U
 
 ## Sprint 4: Free Exploration
 
-Participants have a working PID controller and use the survival map (`05_survival_map.py`) as their metric. They ask Claude to improve the controller. The survival map shows a 2D contour plot of ball survival time as a function of initial position — the goal is to expand the green zone (10-second survival region).
+Participants have a working PID controller and use the survival map (`04_survival_map.py`) as their metric. They ask Claude to improve the controller. The survival map shows a 2D contour plot of ball survival time as a function of initial position — the goal is to expand the green zone (10-second survival region).
 
 ### Approaches to suggest when asked to improve the controller
 - **Gain tuning**: Systematically try different Kp and Kd values, compare survival maps
@@ -104,7 +104,20 @@ Participants have a working PID controller and use the survival map (`05_surviva
 - **Model predictive control**: Optimize a sequence of future actions rather than reacting to the current error
 
 ### How to evaluate improvements
-Run `05_survival_map.py` with the participant's modified controller. Compare the number of grid positions surviving 10 seconds against the baseline (~38/400 with Kp=2, Kd=0).
+Run `04_survival_map.py` with the participant's modified controller. Compare the number of grid positions surviving 10 seconds against the baseline (~38/400 with Kp=2, Kd=0).
+
+### Controller file interface
+Participants create a file (e.g., `my_controller.py`) with:
+```python
+def make_controller(model, dt, home):
+    """Called once per trial. Return a controller function."""
+    def controller(data, plate_id, ball_id, step, t):
+        # Compute and apply corrections to data.ctrl
+        pass
+    return controller
+```
+Run with: `python scripts/04_survival_map.py --controller my_controller.py`
+Always stream the result to the browser — avoid `--no-stream`.
 
 ### Important notes
 - Let the participant describe what they want in plain English — do NOT require control theory jargon

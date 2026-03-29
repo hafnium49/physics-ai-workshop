@@ -81,7 +81,7 @@ Implementation details:
 
 ## Step 5: Create disturbance challenge script (Sprint 3 content) — DONE
 
-**File:** `scripts/04_challenge.py` (created, syntax verified)
+**File:** `scripts/05_challenge.py` (created, syntax verified)
 
 Progressive difficulty that restores the tuning arc:
 
@@ -152,7 +152,7 @@ Validation results (dry run, no video):
 1. ~~Create `mujoco_streamer.py`~~ DONE
 2. ~~Update `CLAUDE.md`~~ DONE
 3. ~~Update scripts 01, 02 with streaming + fallback~~ DONE (+ `send_frame` → `update` API fix)
-4. ~~Create `scripts/04_challenge.py`~~ DONE
+4. ~~Create `scripts/05_challenge.py`~~ DONE
 5. ~~Run `scripts/03_optimize_pid.py`~~ DONE (axis mapping bug fixed)
 6. ~~Update participant-guide.md and host-runbook.md~~ DONE
 7. ~~Pre-flight sanity check~~ DONE
@@ -195,11 +195,11 @@ Confirmed: CLAUDE.md does NOT reveal correct joint pairing, sign, or gains (phys
 Restructured from 3 sprints (build from scratch) to 4 sprints (run scripts → explore improvements):
 - Sprint 1 (15 min): Explore — run pre-copied 01_validate_assembly.py
 - Sprint 2 (12 min): PID Discovery — run 02_pid_baseline.py (wrong PID), guided diagnosis with Claude
-- Sprint 3 (8 min): Challenges — run 04_challenge.py levels 1-2
-- Sprint 4 (25 min): Free Exploration — improve controller, use 05_survival_map.py as metric
+- Sprint 3 (8 min): Challenges — run 05_challenge.py levels 1-2
+- Sprint 4 (25 min): Free Exploration — improve controller, use 04_survival_map.py as metric
 
 Key changes:
-- Split 04_challenge.py: Level 4 (survival map) extracted to standalone 05_survival_map.py
+- Split 05_challenge.py: Level 4 (survival map) extracted to standalone 04_survival_map.py
 - Scripts pre-copied to participant workspaces (spoiler comments kept intentionally)
 - Participant guide rewritten with plain-English prompts for Sprint 4
 - Host runbook updated to copy scripts directory

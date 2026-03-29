@@ -151,8 +151,8 @@ These are pre-built reference scripts that are pre-copied into participant works
 | `01_validate_assembly.py` | Sprint 1: Explore | Load model, stream live, see robot + ball | `python scripts/01_validate_assembly.py` |
 | `02_pid_baseline.py` | Sprint 2: PID Discovery | Deliberately wrong PID baseline (~0.3s survival) | `python scripts/02_pid_baseline.py --kp 50 --kd 10` |
 | `03_optimize_pid.py` | Sprint 2: PID Discovery | Grid search proving correct joints exist (host validation) | `python scripts/03_optimize_pid.py --no-render` |
-| `04_challenge.py` | Sprint 3: Challenges | Progressive disturbances: impulses, oscillation (Levels 1-3) | `python scripts/04_challenge.py --level 2 --kp 2 --kd 0` |
-| `05_survival_map.py` | Sprint 4: Exploration | Survival map metric for controller improvement | `python scripts/05_survival_map.py --kp 2 --kd 0` |
+| `04_survival_map.py` | Sprint 4: Exploration | Survival map metric for controller improvement | `python scripts/04_survival_map.py --kp 2 --kd 0` |
+| `05_challenge.py` | Sprint 3: Challenges | Progressive disturbances: impulses, oscillation (Levels 1-3) | `python scripts/05_challenge.py --level 2 --kp 2 --kd 0` |
 
 > All scripts support `--no-stream` (saves .mp4 fallback) and `--port` (default: `STREAM_PORT` env var or 18080). Scripts resolve model paths relative to their own location, so they work from any working directory.
 
@@ -162,11 +162,11 @@ If a participant's Claude Code session is stuck at Sprint 2 after 25 minutes and
 
 > *"Try telling Claude: Focus on joint 6 and joint 7 for the PID control, and make sure the correction sign is positive. Use small gains like Kp=2."*
 
-If Sprint 2 is completely blocked, copy `04_challenge.py` into the participant's workspace as a working reference to unblock Sprint 3:
+If Sprint 2 is completely blocked, copy `05_challenge.py` into the participant's workspace as a working reference to unblock Sprint 3:
 
 ```bash
-sudo cp /path/to/physics-ai-workshop/scripts/04_challenge.py /home/engineer$i/physics_sim/
-sudo chown engineer$i:workshop /home/engineer$i/physics_sim/04_challenge.py
+sudo cp /path/to/physics-ai-workshop/scripts/05_challenge.py /home/engineer$i/physics_sim/
+sudo chown engineer$i:workshop /home/engineer$i/physics_sim/05_challenge.py
 ```
 
 ---

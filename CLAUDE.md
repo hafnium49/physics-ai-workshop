@@ -39,7 +39,7 @@ Build a Franka Panda arm holding a plate with a ball, then optimize PID control 
 1. **Explore** (15 min) — Run the pre-assembled model, start live stream, move joints to build intuition
 2. **PID Discovery** (12 min) — Run the baseline PID (wrong sign), diagnose with Claude, discover the correct joints and sign
 3. **Challenges** (8 min) — Run disturbance challenges to test PID robustness
-4. **Free Exploration** (25 min) — Improve the controller beyond basic PID. Use the survival map (`05_survival_map.py`) as the metric to measure progress
+4. **Free Exploration** (25 min) — Improve the controller beyond basic PID. Use the survival map (`04_survival_map.py`) as the metric to measure progress
 
 ## Live Visualization
 
@@ -90,6 +90,15 @@ data.qpos[ball_qpos_addr+3:ball_qpos_addr+7] = [1, 0, 0, 0]  # identity quaterni
 Note: j5, j6, j7 are set so the plate is horizontal with the edge gripped by the fingers.
 
 When writing a PID controller for the first time, do not run a systematic joint authority analysis upfront. Let the initial attempt use a reasonable guess for which joints to control, and diagnose from the results.
+
+## Sprint 4: Controller Improvement
+
+When a participant asks you to improve or change the controller:
+1. Create a separate controller file (e.g., `my_controller.py`) with a `make_controller(model, dt, home)` function
+2. Do NOT modify `04_survival_map.py` directly
+3. Run: `python scripts/04_survival_map.py --controller my_controller.py`
+4. The `make_controller` function is called once per trial and must return a callable `controller(data, plate_id, ball_id, step, t)` that sets `data.ctrl` values
+5. Always stream the survival map to the browser for visual comparison — avoid `--no-stream`
 
 ## Model Architecture
 

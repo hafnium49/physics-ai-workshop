@@ -9,8 +9,8 @@
 """
 import os
 import sys
-os.environ.setdefault("MUJOCO_GL", "egl")
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+os.environ.setdefault("MUJOCO_GL", "egl")  # ヘッドレス描画用（GPUでオフスクリーンレンダリング）
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # プロジェクトルートをインポートパスに追加
 
 import argparse
 import mujoco
@@ -20,10 +20,10 @@ import numpy as np
 # オプション: ストリーマーのインポート
 # ---------------------------------------------------------------------------
 try:
-    from mujoco_streamer import LiveStreamer
+    from mujoco_streamer import LiveStreamer  # ブラウザへのリアルタイム映像配信ライブラリ
     HAS_STREAMER = True
 except ImportError:
-    HAS_STREAMER = False
+    HAS_STREAMER = False  # ライブ配信が使えない場合は.mp4保存にフォールバック
 
 # ---------------------------------------------------------------------------
 # コマンドライン引数
@@ -37,7 +37,7 @@ parser.add_argument("--no-render", action="store_true",
 parser.add_argument("--port", type=int, default=None,
                     help="MJPEG配信ポート（デフォルト: STREAM_PORT環境変数または18080）")
 args = parser.parse_args()
-stream_port = args.port if args.port is not None else int(os.environ.get("STREAM_PORT", 18080))
+stream_port = args.port if args.port is not None else int(os.environ.get("STREAM_PORT", 18080))  # 各参加者固有のポート番号を取得
 
 # ---------------------------------------------------------------------------
 # モデルの読み込み

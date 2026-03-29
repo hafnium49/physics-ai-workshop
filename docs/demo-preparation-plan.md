@@ -204,6 +204,8 @@ Key changes:
 - Controller Score metric (mean survival time) added to 04_survival_map.py terminal output and contour plot
 - Participant guide rewritten with plain-English prompts for Sprint 4
 - Host runbook updated to copy scripts directory
+- 05_challenge.py rewritten as import-safe controller playground with guardrail comments
+- 04_survival_map.py exception handling fixed (BaseException for broken controller resilience)
 
 ---
 

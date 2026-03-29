@@ -82,6 +82,9 @@ Guided first pass through the improvement loop:
 4. Run `scripts/04_survival_map.py --controller scripts/05_challenge.py` — see the score change
 5. Run `scripts/05_challenge.py` again — watch the improved controller
 
+When a participant asks in natural language to "test the modified controller with the survival map" or similar, translate to the command:
+`python scripts/04_survival_map.py --controller scripts/05_challenge.py`
+
 This teaches the full iteration workflow before Sprint 4's open exploration.
 
 ## Sprint 4: Free Exploration (25 min)
@@ -96,12 +99,12 @@ Participants edit `scripts/05_challenge.py` (the controller playground) to impro
 5. Repeat
 
 ### Approaches to suggest when asked to improve the controller
-- **Velocity feedback**: Enable the derivative term (Kd > 0) to react to ball speed, not just position
-- **Gain tuning**: Systematically try different Kp and Kd values, compare survival maps
-- **Asymmetric gains**: Use different gains for X vs Y directions
-- **Gain scheduling**: Use stronger corrections when the ball is far from center, gentler when close
-- **Integral correction**: Add a small integral term (Ki) to fix persistent drift
-- **Output clamping**: Limit maximum correction to prevent overreaction and instability
+- **Velocity feedback**: Enable the derivative term (Kd > 0) to react to ball speed — 「ボールの速さにも反応するようにして」
+- **Gain tuning**: Systematically try different Kp and Kd values — 「いろんなゲインの組み合わせを試して」
+- **Asymmetric gains**: Use different gains for X vs Y — 「左右と前後で補正の強さを変えて」
+- **Gain scheduling**: Stronger corrections near edges — 「端に近いほど補正を強くして」
+- **Integral correction**: Fix persistent drift with Ki — 「じわじわ寄っていくのを直して」
+- **Output clamping**: Limit maximum correction — 「補正の上限を設けて」
 
 ### How to evaluate improvements
 The survival map prints a **Controller Score** = mean survival time in seconds across all grid positions. Baseline PID (Kp=2, Kd=0) scores ~3.3 sec. Higher is better. The score also appears on the contour plot.
@@ -129,6 +132,8 @@ Always stream the result to the browser — avoid `--no-stream`.
 - Always run the survival map after making changes so the participant can see the effect
 - If an approach fails to implement, fall back to gain tuning (systematically try many Kp/Kd values)
 - Controllers must use only numpy — do not suggest importing new dependencies
+- When speaking to the participant, use Japanese terminology matching the script output: "維持マップ" (not "survival map"), "スコア" (not "Controller Score"), "維持時間" (not "survival time")
+- When a participant asks "スコアを上げるために何を変えるべきか" (what should I change to improve the score), suggest approaches from the list above using non-technical Japanese descriptions
 
 ## Streaming and Interactive Camera
 

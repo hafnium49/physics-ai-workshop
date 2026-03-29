@@ -190,6 +190,22 @@ Confirmed: CLAUDE.md does NOT reveal correct joint pairing, sign, or gains (phys
 
 ---
 
+## Step 11: Workshop restructure — DONE
+
+Restructured from 3 sprints (build from scratch) to 4 sprints (run scripts → explore improvements):
+- Sprint 1 (15 min): Explore — run pre-copied 01_validate_assembly.py
+- Sprint 2 (12 min): PID Discovery — run 02_pid_baseline.py (wrong PID), guided diagnosis with Claude
+- Sprint 3 (8 min): Challenges — run 04_challenge.py levels 1-2
+- Sprint 4 (25 min): Free Exploration — improve controller, use 05_survival_map.py as metric
+
+Key changes:
+- Split 04_challenge.py: Level 4 (survival map) extracted to standalone 05_survival_map.py
+- Scripts pre-copied to participant workspaces (spoiler comments kept intentionally)
+- Participant guide rewritten with plain-English prompts for Sprint 4
+- Host runbook updated to copy scripts directory
+
+---
+
 ## Verification
 
 1. ~~`scripts/preflight.py`~~ ALL 9 CHECKS PASSED

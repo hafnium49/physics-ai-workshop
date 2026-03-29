@@ -143,7 +143,7 @@ All 9 checks should print `[PASS]`. If any fail, fix the issue before proceeding
 
 ## 6. Reference Scripts & Sprint Mapping
 
-These are pre-built reference scripts that prove the pipeline works. **Participants build their own scripts from scratch using Claude Code** — they do NOT run these directly.
+These are pre-built reference scripts that are pre-copied into participant workspaces. Participants run these directly and use Claude Code to explore and improve them.
 
 | Script | Sprint | Purpose | Example |
 |--------|--------|---------|---------|

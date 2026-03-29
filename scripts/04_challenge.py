@@ -301,7 +301,6 @@ else:
 
             # Level 3: oscillation
             amplitude = 0.02
-            current_freq = args.freq
 
             step = 0
             survival_time = 0.0

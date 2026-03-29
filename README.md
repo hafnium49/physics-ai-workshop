@@ -1,61 +1,49 @@
-# FY2026 物理AIワークショップ
+# 🤖 物理AIワークショップ
 
-AIコーディングエージェントでデジタルツインを構築
+> AIに話しかけるだけで、ロボットが動き出す。プログラミング経験ゼロでOK。
 
-## 概要
+---
 
-素材エンジニアが [Claude Code](https://claude.ai/code)（AIコーディングエージェント）を使い、NVIDIA DGX Spark上でMuJoCo物理シミュレーションを構築・最適化する1時間のハンズオンワークショップです。
+## やること
 
-プログラミング経験は不要です。AIにやりたいことを日本語で伝えるだけで、AIがコードを書いてくれます。
+Franka Panda ロボットアームがプレートを持ち、その上にボールが載っています。
+あなたの目標：AIに日本語で指示を出しながら、ボールを落とさずに**10秒間バランスさせる**コントローラを作ること。
 
-## 構築するもの
+- 🎮 **見る** — ブラウザ上で3Dシミュレーションをリアルタイム表示。マウスで視点を自由に回転・ズーム
+- 🧪 **試す** — 「この関節を動かして」「ゲインを上げて」とAIに伝えるだけ。コードは書きません
+- 🏆 **競う** — コントローラスコアを改善して、リーダーボードに挑戦
 
-**Franka Panda ロボットアーム**がプレートを持ち、その上にボールを載せたシミュレーションを構築します。目標：Claude Codeを使ってシミュレーションを組み立て、物理挙動をテストし、PID制御パラメータを最適化して、ボールを10秒間バランスさせることです。
+---
 
-## ワークショップ構成
+## 💬 プログラミング経験は不要です
 
-| スプリント | 時間 | 目標 | 内容 |
-|--------|------|------|------|
-| 1. 探索 | 15分 | ロボットを理解する | 構築済みシミュレーションを実行し、関節を動かして直感を養う |
-| 2. PID発見 | 12分 | ロボットにバランスを教える | 動作しないコントローラを実行し、Claudeに診断・修正を依頼する |
-| 3. 初回イテレーション | 8分 | 改善ワークフローを体験 | ベースラインスコアを測定し、最初の改善を試して効果を確認する |
-| 4. 自由探索 | 25分 | コントローラを改善する | サバイバルマップをスコアボードとして使い、Claudeにより良い制御戦略を試してもらう |
+[Claude Code](https://claude.ai/code)（AIコーディングエージェント）があなたの言葉をコードに変換します。
+ターミナルに日本語で指示を入力するだけです。例えば：
 
-## 事前準備
+- *「ロボットを見せて」*
+- *「関節6をゆっくり動かして」*
+- *「なぜボールが左に落ち続けるの？」*
+- *「Kpを5にして再実行して」*
 
-- **Visual Studio Code** をノートPCにインストール済みであること
-- **Remote - SSH** 拡張機能がVS Codeにインストール済みであること
-- 接続情報はワークショップ当日に印刷カードで配布されます
+---
 
-## リポジトリ構成
+## ⏱ ワークショップの流れ（1時間）
 
-```
-physics-ai-workshop/
-├── content/                    # シミュレーションモデル
-│   ├── panda_ball_balance.xml  # プレート＋ボール付きPandaアーム（組み立て済み）
-│   ├── ball_and_plate.xml      # プレート＋ボール（スタンドアロン）
-│   └── franka_panda/           # Franka Panda ロボットアーム（MuJoCo Menagerieより）
-├── scripts/                    # リファレンススクリプト
-│   ├── preflight.py            # 事前チェック（ホスト専用）
-│   ├── 01_validate_assembly.py # スプリント1：ロボットを見る
-│   ├── 02_pid_baseline.py      # スプリント2：PID発見
-│   ├── 03_optimize_pid.py      # スプリント2：正解のPIDを検証
-│   ├── 04_survival_map.py      # スプリント3+4：維持マップメトリック
-│   └── 05_challenge.py         # スプリント3+4：コントローラ探索プレイグラウンド
-├── mujoco_streamer.py          # ライブ配信ヘルパー
-├── docs/
-│   ├── participant-guide.md    # 参加者ガイド（日本語）
-│   ├── host-preparation-runbook.md  # ホスト準備ランブック
-│   ├── autonomous-demo-script.md    # デモスクリプト
-│   └── demo-preparation-plan.md     # 準備計画
-├── .claude/
-│   ├── settings.json           # Claude Code権限設定
-│   └── skills/workshop-sim/    # ワークショップスキル
-│       └── SKILL.md
-└── CLAUDE.md                   # Claude Codeコンテキスト
-```
+📍 **スプリント1（15分）探索**
+ロボットを動かして、どの関節がプレートを傾けるか発見する
 
-## クイックスタート
+📍 **スプリント2（12分）PID発見**
+動かないコントローラを実行し、AIに「なぜ失敗した？」と聞く
+
+📍 **スプリント3（8分）初回改善**
+数値を1つ変えて、スコアが変わるか確認する
+
+📍 **スプリント4（25分）自由探索**
+コントローラを改善して、最高スコアを目指す！
+
+---
+
+## 🚀 はじめかた
 
 VS Codeで接続後（印刷カードを参照）：
 
@@ -71,24 +59,95 @@ VS Codeで接続後（印刷カードを参照）：
    ```
 5. 最初の指示を入力：
    > 「01_validate_assembly.pyスクリプトを実行して、ライブ配信を開始して。ロボットを見たい。」
+6. VS Codeの右下にポップアップが表示されたら、**「ブラウザで開く」**をクリック
 
-## シミュレーションコンテンツ
+---
 
-### Franka Panda アーム
+## 🏆 コントローラスコア
 
-[MuJoCo Menagerie](https://github.com/google-deepmind/mujoco_menagerie) から取得した7自由度ロボットアームです。MuJoCo Menagerieは、Google DeepMindが管理する高品質なオープンソースロボットモデルのコレクションです。正確なメッシュ、関節制限、動力学パラメータが含まれています。
+コントローラの性能は**コントローラスコア**で測定されます。
+ボールがプレート上のさまざまな位置からスタートし、落ちずに何秒間バランスできるかの平均値です。
 
-### ボールとプレート
+| レベル | スコア | 意味 |
+|--------|--------|------|
+| ベースライン | ~3.3秒 | デフォルトのPID |
+| 改善 | 4.0秒以上 | ゲイン調整で到達可能 |
+| 優秀 | 5.0秒以上 | より賢い制御戦略が必要 |
 
-フラットなプレートとフリージョイントを持つボールを定義した最小構成のモデルです。ワークショップの課題は、これをPandaのグリッパーに取り付け、PID制御でボールをバランスさせることです。
+> スコアをホストに伝えて、ホワイトボードのリーダーボードに記録しましょう！
 
-## リソース
+---
+
+## 🎮 ライブ表示の操作
+
+ブラウザ上のシミュレーション画面はインタラクティブです：
+
+| 操作 | 動作 |
+|------|------|
+| 左ドラッグ | 視点を回転 |
+| スクロール | ズーム |
+| 右ドラッグ | 移動 |
+| Rキー | カメラをリセット |
+
+---
+
+## 📋 事前準備
+
+- **Visual Studio Code** をノートPCにインストール — [ダウンロード](https://code.visualstudio.com/)
+- **Remote - SSH** 拡張機能をVS Codeにインストール
+- 接続情報はワークショップ当日に印刷カードで配布されます
+
+---
+
+## 困ったら
+
+| 問題 | 解決方法 |
+|------|----------|
+| ライブ映像が見えない | VS Codeのポートタブで地球アイコンをクリック |
+| 映像がフリーズした | Claudeに「ライブ配信を再開して」と伝える |
+| Claudeが応答しない | `Ctrl+C` → `claude` で再起動 |
+
+> 詳しくは [`docs/participant-guide.md`](docs/participant-guide.md) を参照してください。
+
+---
+
+<details>
+<summary>📁 技術詳細（クリックで展開）</summary>
+
+### 仕組み
+
+- NVIDIA DGX Spark上の [MuJoCo](https://mujoco.readthedocs.io/) 物理エンジンでシミュレーションを実行
+- ライブ映像はMJPEG形式でブラウザにストリーミング（VS Codeが自動でポート転送）
+- [Claude Code](https://claude.ai/code) がPythonコードを生成・実行
+
+### リポジトリ構成
+
+```
+physics-ai-workshop/
+├── content/                    # シミュレーションモデル
+│   ├── panda_ball_balance.xml  # 組み立て済みPandaアーム＋プレート＋ボール
+│   ├── ball_and_plate.xml      # プレート＋ボール（スタンドアロン）
+│   └── franka_panda/           # Franka Panda ロボットアーム
+├── scripts/                    # ワークショップスクリプト
+│   ├── 01_validate_assembly.py # スプリント1：ロボットを見る
+│   ├── 02_pid_baseline.py      # スプリント2：PID発見
+│   ├── 03_optimize_pid.py      # スプリント2：正解のPID検証
+│   ├── 04_survival_map.py      # スプリント3+4：維持マップ
+│   └── 05_challenge.py         # スプリント3+4：コントローラ探索
+├── mujoco_streamer.py          # ライブ配信ヘルパー
+├── docs/                       # ドキュメント
+└── CLAUDE.md                   # AIエージェント用コンテキスト
+```
+
+### リソース
 
 - [MuJoCo ドキュメント](https://mujoco.readthedocs.io/)
 - [MuJoCo Menagerie](https://github.com/google-deepmind/mujoco_menagerie)
 - [Claude Code](https://claude.ai/code)
 - [MuJoCo Pythonバインディング](https://mujoco.readthedocs.io/en/stable/python.html)
 
-## ライセンス
+### ライセンス
 
-このワークショップリポジトリは [Apache 2.0](https://www.apache.org/licenses/LICENSE-2.0) ライセンスの下で公開されています。Franka Pandaモデルは [MuJoCo Menagerie](https://github.com/google-deepmind/mujoco_menagerie)（Apache 2.0、Copyright Google DeepMind）から取得しています。
+[Apache 2.0](https://www.apache.org/licenses/LICENSE-2.0) — Franka Pandaモデルは [MuJoCo Menagerie](https://github.com/google-deepmind/mujoco_menagerie)（Copyright Google DeepMind）より
+
+</details>

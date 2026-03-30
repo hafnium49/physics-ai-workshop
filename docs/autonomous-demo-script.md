@@ -86,4 +86,4 @@ Paste:
 2. Close the Claude Code session: type `exit` or press `Ctrl+D`
 3. Tell participants: *"Now it's your turn. Follow the guide on your printed card."*
 
-> **Note:** Participants have the reference scripts pre-copied in their `~/physics_sim/scripts/` directory. They will run these directly and focus on Sprint 4 (free exploration) for the bulk of the workshop time.
+> **Note:** Participants have the reference scripts pre-copied in their `~/physics_sim/scripts/` directory. They will run these directly and focus on Sprints 4 (Digital Twin Experiment) and 5 (Autonomous R&D Loop) for the bulk of the workshop time.

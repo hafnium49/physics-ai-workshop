@@ -73,21 +73,29 @@ Follow this iterative process. Do NOT run diagnostics as the first step — writ
 | Survival time stuck at ~1s regardless of gains | You may be controlling the wrong joints entirely — run the nudge diagnostic |
 | "Port already in use" error | A previous script is still running — press Ctrl+C in that terminal first |
 
-## Sprint 3: First Iteration (8 min)
+## Sprint 3: Working Controller (10 min)
 
-Guided first pass through the improvement loop:
-1. Run `scripts/05_challenge.py` standalone — watch the default PID in action
-2. Run `scripts/04_survival_map.py` — see the baseline Controller Score (~3.3 sec)
-3. Make one change: ask Claude to set kd=0.5 in `05_challenge.py`
-4. Run `scripts/04_survival_map.py --controller scripts/05_challenge.py` — see the score change
-5. Run `scripts/05_challenge.py` again — watch the improved controller
+Run `scripts/03_optimize_pid.py` and observe the working PID controller. Compare its behavior with the failing baseline from Sprint 2. Explain what changed: correct joints, correct sign. This is observation only — no code editing.
+
+Key discussion points:
+- Which joints does `03_optimize_pid.py` control vs `02_pid_baseline.py`?
+- Why does the correction sign matter?
+- What does the survival time tell us about the controller quality?
+
+## Sprint 4: Digital Twin Experiment (15 min)
+
+Guided first pass through the measurement and improvement loop:
+1. Run `scripts/04_survival_map.py` — see the baseline Controller Score (~3.3 sec)
+2. Make one change: ask Claude to set kd=0.5 in `05_challenge.py`
+3. Run `scripts/04_survival_map.py --controller scripts/05_challenge.py` — see the score change
+4. Compare the new score with the baseline
 
 When a participant asks in natural language to "test the modified controller with the survival map" or similar, translate to the command:
 `python scripts/04_survival_map.py --controller scripts/05_challenge.py`
 
-This teaches the full iteration workflow before Sprint 4's open exploration.
+This teaches the full iteration workflow before Sprint 5's autonomous exploration.
 
-## Sprint 4: Free Exploration (25 min)
+## Sprint 5: Autonomous R&D Loop (15 min)
 
 Participants edit `scripts/05_challenge.py` (the controller playground) to improve the controller, then evaluate with `scripts/04_survival_map.py`.
 
@@ -97,6 +105,8 @@ Participants edit `scripts/05_challenge.py` (the controller playground) to impro
 3. Participant runs: `python scripts/04_survival_map.py --controller scripts/05_challenge.py`
 4. The survival map shows the Controller Score — compare with baseline (~3.3 sec)
 5. Repeat
+
+In Sprint 5, Claude self-drives this loop: form a hypothesis, edit `05_challenge.py`, run the survival map, compare scores, and iterate. The participant guides Claude with high-level goals in natural language.
 
 ### Approaches to suggest when asked to improve the controller
 - **Velocity feedback**: Enable the derivative term (Kd > 0) to react to ball speed — 「ボールの速さにも反応するようにして」

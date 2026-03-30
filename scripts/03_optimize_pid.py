@@ -12,51 +12,35 @@ import sys
 os.environ.setdefault("MUJOCO_GL", "egl")  # ヘッドレス描画用（GPUでオフスクリーンレンダリング）
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # プロジェクトルートをインポートパスに追加
 
-import argparse
 import mujoco
 import numpy as np
 
-# ---------------------------------------------------------------------------
-# オプション: ストリーマーのインポート
-# ---------------------------------------------------------------------------
-try:
-    from mujoco_streamer import LiveStreamer  # ブラウザへのリアルタイム映像配信ライブラリ
-    HAS_STREAMER = True
-except ImportError:
-    HAS_STREAMER = False  # ライブ配信が使えない場合は.mp4保存にフォールバック
 
 # ---------------------------------------------------------------------------
-# コマンドライン引数
+# make_controller: 04_survival_map.py からインポート可能なPIDコントローラ
 # ---------------------------------------------------------------------------
-parser = argparse.ArgumentParser(
-    description="ボール・オン・プレートのPID最適化グリッド探索")
-parser.add_argument("--no-stream", action="store_true",
-                    help="ライブ配信を無効化し、.mp4として保存")
-parser.add_argument("--no-render", action="store_true",
-                    help="全レンダリングをスキップ（ドライラン）")
-parser.add_argument("--port", type=int, default=None,
-                    help="MJPEG配信ポート（デフォルト: STREAM_PORT環境変数または18080）")
-args = parser.parse_args()
-stream_port = args.port if args.port is not None else int(os.environ.get("STREAM_PORT", 18080))  # 各参加者固有のポート番号を取得
+def make_controller(model, dt, home):
+    """Factory: return a PID controller using the correct joints and sign.
 
-# ---------------------------------------------------------------------------
-# モデルの読み込み
-# ---------------------------------------------------------------------------
-_script_dir = os.path.dirname(os.path.abspath(__file__))
-_project_root = os.path.dirname(_script_dir)
+    This is the 'working controller' that Sprint 3 demonstrates.
+    Uses joint6 (ctrl[5]) for X and joint7 (ctrl[6]) for Y, positive sign.
+    """
+    kp = 2.0
+    kd = 2.0
+    prev_ex = 0.0
+    prev_ey = 0.0
 
-# プレート付きPandaアームとボールが組み立て済みのモデルを読み込み
-model = mujoco.MjModel.from_xml_path(os.path.join(_project_root, "content", "panda_ball_balance.xml"))
+    def controller(data, plate_id, ball_id, step, t):
+        nonlocal prev_ex, prev_ey
+        brel = data.xpos[ball_id] - data.xpos[plate_id]
+        ex, ey = brel[0], brel[1]
+        dx = (ex - prev_ex) / dt
+        dy = (ey - prev_ey) / dt
+        data.ctrl[5] = home[5] + (kp * ex + kd * dx)
+        data.ctrl[6] = home[6] + (kp * ey + kd * dy)
+        prev_ex, prev_ey = ex, ey
 
-# 名前からID番号を取得（シミュレーション中の参照用）
-plate_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, "plate")  # プレートボディのID
-ball_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, "ball")    # ボールボディのID
-ball_joint_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, "ball_free")  # ボールの自由関節ID（6自由度）
-
-# ホームポーズ: アームが自然な姿勢で静止する関節角度（ラジアン）
-# j1=0, j2=-0.785, j3=0, j4=-2.356, j5=1.184, j6=3.184, j7=1.158
-home = [0.0, -0.785, 0.0, -2.356, 1.184, 3.184, 1.158]
-joint_names = [f"joint{i}" for i in range(1, 8)]  # joint1〜joint7の名前リスト
+    return controller
 
 
 # 指定パラメータで1回のシミュレーション試行を実行する関数
@@ -147,8 +131,52 @@ def run_trial(joint_x_idx, joint_y_idx, sign, kp, kd, duration=10.0, render=Fals
     return (duration, frames) if render else duration
 
 
-try:
-    # --- フェーズ1: どの関節ペアがプレート傾きを制御できるか検証する ---
+if __name__ == "__main__":
+    import argparse
+
+    # ---------------------------------------------------------------------------
+    # オプション: ストリーマーのインポート
+    # ---------------------------------------------------------------------------
+    try:
+        from mujoco_streamer import LiveStreamer  # ブラウザへのリアルタイム映像配信ライブラリ
+        HAS_STREAMER = True
+    except ImportError:
+        HAS_STREAMER = False  # ライブ配信が使えない場合は.mp4保存にフォールバック
+
+    # ---------------------------------------------------------------------------
+    # コマンドライン引数
+    # ---------------------------------------------------------------------------
+    parser = argparse.ArgumentParser(
+        description="ボール・オン・プレートのPID最適化グリッド探索")
+    parser.add_argument("--no-stream", action="store_true",
+                        help="ライブ配信を無効化し、.mp4として保存")
+    parser.add_argument("--no-render", action="store_true",
+                        help="全レンダリングをスキップ（ドライラン）")
+    parser.add_argument("--port", type=int, default=None,
+                        help="MJPEG配信ポート（デフォルト: STREAM_PORT環境変数または18080）")
+    args = parser.parse_args()
+    stream_port = args.port if args.port is not None else int(os.environ.get("STREAM_PORT", 18080))
+
+    # ---------------------------------------------------------------------------
+    # モデルの読み込み
+    # ---------------------------------------------------------------------------
+    _script_dir = os.path.dirname(os.path.abspath(__file__))
+    _project_root = os.path.dirname(_script_dir)
+
+    # プレート付きPandaアームとボールが組み立て済みのモデルを読み込み
+    model = mujoco.MjModel.from_xml_path(os.path.join(_project_root, "content", "panda_ball_balance.xml"))
+
+    # 名前からID番号を取得（シミュレーション中の参照用）
+    plate_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, "plate")
+    ball_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, "ball")
+    ball_joint_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, "ball_free")
+
+    # ホームポーズ: アームが自然な姿勢で静止する関節角度（ラジアン）
+    home = [0.0, -0.785, 0.0, -2.356, 1.184, 3.184, 1.158]
+    joint_names = [f"joint{i}" for i in range(1, 8)]
+
+    try:
+        # --- フェーズ1: どの関節ペアがプレート傾きを制御できるか検証する ---
     print("=" * 60)
     print("フェーズ1: 関節ペアの検証 (Kp=2, Kd=0)")
     print("=" * 60)

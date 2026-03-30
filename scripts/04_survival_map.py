@@ -21,6 +21,7 @@ def _timeout_handler(signum, frame):
 
 _script_dir = os.path.dirname(os.path.abspath(__file__))
 _project_root = os.path.dirname(_script_dir)
+_default_controller = os.path.join(_script_dir, "03_optimize_pid.py")
 
 import argparse
 import importlib.util
@@ -85,7 +86,7 @@ parser.add_argument("--kp", type=float, default=2.0,
                     help="比例ゲイン（デフォルト: 2.0）")
 parser.add_argument("--kd", type=float, default=0.0,
                     help="微分ゲイン（デフォルト: 0.0）")
-parser.add_argument("--controller", type=str, default=None,
+parser.add_argument("--controller", type=str, default=_default_controller,
                     help="make_controller(model, dt, home)関数を持つコントローラーファイルのパス")
 parser.add_argument("--grid", type=int, default=20,
                     help="グリッド解像度 NxN（デフォルト: 20）")

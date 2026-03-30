@@ -36,10 +36,11 @@ Build a Franka Panda arm holding a plate with a ball, then optimize PID control 
 
 ### Sprint Structure
 
-1. **Explore** (15 min) — Run the pre-assembled model, start live stream, move joints to build intuition
-2. **PID Discovery** (12 min) — Run the baseline PID (wrong sign), diagnose with Claude, discover the correct joints and sign
-3. **First Iteration** (8 min) — Run the baseline survival map, make one improvement (e.g., enable Kd), measure the score change
-4. **Free Exploration** (25 min) — Improve the controller beyond basic PID. Use the survival map (`04_survival_map.py`) as the metric to measure progress
+1. **Explore** (10 min) — Run `01_validate_assembly.py`, start live stream, understand the world
+2. **Baseline Diagnosis** (10 min) — Run `02_pid_baseline.py`, observe and diagnose failure
+3. **Working Controller** (10 min) — Run `03_optimize_pid.py`, understand why it works vs baseline
+4. **Digital Twin Experiment** (15 min) — Measure with `04_survival_map.py`, make one change in `05_challenge.py`, compare
+5. **Autonomous R&D Loop** (15 min) — Claude self-drives hypothesis/edit/test/compare on `05_challenge.py`
 
 ## Live Visualization
 
@@ -91,9 +92,9 @@ Note: j5, j6, j7 are set so the plate is horizontal with the edge gripped by the
 
 When writing a PID controller for the first time, do not run a systematic joint authority analysis upfront. Let the initial attempt use a reasonable guess for which joints to control, and diagnose from the results.
 
-## Sprint 4: Controller Improvement
+## Sprints 4-5: Controller Improvement
 
-When a participant asks you to improve or change the controller:
+When a participant asks you to improve or change the controller (Sprint 4: Digital Twin Experiment or Sprint 5: Autonomous R&D Loop):
 1. Create a separate controller file (e.g., `my_controller.py`) with a `make_controller(model, dt, home)` function
 2. Do NOT modify `04_survival_map.py` directly
 3. Run: `python scripts/04_survival_map.py --controller my_controller.py`

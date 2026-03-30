@@ -165,7 +165,7 @@ If a participant's Claude Code session is stuck at Sprint 2 after 25 minutes and
 
 > *"Try telling Claude: Focus on joint 6 and joint 7 for the PID control, and make sure the correction sign is positive. Use small gains like Kp=2."*
 
-If Sprint 2 is completely blocked, copy `05_challenge.py` into the participant's workspace as a working reference to unblock Sprint 3:
+If Sprint 2 is completely blocked, copy `05_challenge.py` into the participant's workspace as a working reference to unblock Sprint 4:
 
 ```bash
 sudo cp /path/to/physics-ai-workshop/scripts/05_challenge.py /home/engineer$i/physics_sim/

@@ -189,11 +189,12 @@ Confirmed: CLAUDE.md does NOT reveal correct joint pairing, sign, or gains (phys
 
 ## Step 11: Workshop restructure — DONE
 
-Restructured from 3 sprints (build from scratch) to 4 sprints (run scripts → explore improvements):
-- Sprint 1 (15 min): Explore — run pre-copied 01_validate_assembly.py
-- Sprint 2 (12 min): PID Discovery — run 02_pid_baseline.py (wrong PID), guided diagnosis with Claude
-- Sprint 3 (8 min): First Iteration — run 05_challenge.py standalone (watch default PID), run 04_survival_map.py (baseline score), make one change (kd=0.5), re-measure
-- Sprint 4 (25 min): Free Exploration — improve controller, use 04_survival_map.py as metric
+Restructured from 3 sprints (build from scratch) to 5 sprints (observe → diagnose → understand → experiment → autonomous R&D):
+- Sprint 1 (10 min): Explore — run 01_validate_assembly.py, understand the world
+- Sprint 2 (10 min): Baseline Diagnosis — run 02_pid_baseline.py (wrong PID), observe and diagnose failure
+- Sprint 3 (10 min): Working Controller — run 03_optimize_pid.py, understand why it works vs baseline
+- Sprint 4 (15 min): Digital Twin Experiment — measure with 04_survival_map.py, make one change in 05_challenge.py, compare
+- Sprint 5 (15 min): Autonomous R&D Loop — Claude self-drives hypothesis/edit/test/compare on 05_challenge.py
 
 Key changes:
 - Split 05_challenge.py: Level 4 (survival map) extracted to standalone 04_survival_map.py

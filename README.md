@@ -133,10 +133,10 @@ physics-ai-workshop/
 │   └── franka_panda/           # Franka Panda ロボットアーム
 ├── scripts/                    # ワークショップスクリプト
 │   ├── 01_validate_assembly.py # スプリント1：ロボットを見る
-│   ├── 02_pid_baseline.py      # スプリント2：PID発見
-│   ├── 03_optimize_pid.py      # スプリント2：正解のPID検証
-│   ├── 04_survival_map.py      # スプリント3+4：維持マップ
-│   └── 05_challenge.py         # スプリント3+4：コントローラ探索
+│   ├── 02_pid_baseline.py      # スプリント2：ベースライン診断
+│   ├── 03_optimize_pid.py      # スプリント3：動く制御器
+│   ├── 04_survival_map.py      # スプリント4+5：維持マップ
+│   └── 05_challenge.py         # スプリント4+5：コントローラ探索
 ├── mujoco_streamer.py          # ライブ配信ヘルパー
 ├── docs/                       # ドキュメント
 └── CLAUDE.md                   # AIエージェント用コンテキスト

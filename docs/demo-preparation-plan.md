@@ -247,6 +247,35 @@ Three reviews (Software Architect, Game Designer, Reality Checker) converged: or
 
 ---
 
+## Step 12: Security + operational fixes — DONE
+
+Two reviews (Security Engineer, DevOps Automator) found critical issues.
+
+### Security fixes (physics-ai-workshop, public repo):
+- Removed hardcoded `PhysicsAI2026!` from setup script and runbook (replaced with `<WORKSHOP_PASSWORD>` placeholder)
+- Added `.claude/settings.local.json` to `.gitignore` (prevents leaking auto-approved commands)
+- Bound `mujoco_streamer.py` to `127.0.0.1` instead of `0.0.0.0` (localhost only, VS Code port forwarding still works)
+
+### Operational fixes (physics-ai-workshop):
+- Fixed Python venv idempotency: always run pip (was skipping entirely on re-run if venv dir existed)
+- Parallelized user provisioning: 5 users concurrently (~5 min vs ~25 min sequential)
+- Explicit "password NOT changed" message when skipping existing users
+
+### dgx-spark-playbooks updates (private repo):
+- `bootstrap-workshop.sh`: removed global Node.js/Claude Code install, keeps `at` + SSH/security only
+- `setup-workshop.sh`: removed user creation (users created by physics-ai-workshop), keeps SSH config/tunnels/dead-man's switch
+- `Host_Preparation_Runbook.md`: rewritten Phase 1+2 for per-user provisioning via physics-ai-workshop
+- `workshop-ssh-softening-plan.md`: updated scripts table and implementation sequence
+
+### Architecture boundary:
+- **dgx-spark-playbooks** (private): SSH tunnels, security hardening, dead-man's switch
+- **physics-ai-workshop** (public): user creation, per-user nvm/Node.js/Claude Code, Python venv, workspace files
+
+### Remaining:
+- `smoke-test-workshop.sh` still checks for global Claude Code — needs updating to check per-user install
+
+---
+
 ## Step 10: Port migration 8080→18080 — DONE
 
 Port 8080 is commonly used by web servers/proxies and likely occupied on the DGX Spark. Migrated all ports to the 18080 range.

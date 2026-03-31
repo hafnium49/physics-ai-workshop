@@ -11,76 +11,47 @@ This document outlines the software and environment preparation required on the 
 
 ---
 
-## 2. Phase 1: Install Global Dependencies
+## 2. Phases 1+2: Create Users & Provision Environments
 
-Claude Code operates as a Node.js application. It must be installed globally so all workshop participants can execute it from their respective terminal sessions.
+Everything is handled by two setup scripts in the `setup/` directory. Each user gets a fully isolated local environment — no global Node.js or system-level Python changes.
 
-```bash
-# 1. Install Node.js (Version 20.x recommended)
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-sudo apt-get install -y nodejs
-
-# 2. Install Claude Code globally via npm
-sudo npm install -g @anthropic-ai/claude-code
-
-# 3. Create the dedicated user group for easy teardown later
-sudo groupadd workshop
+**Per-user architecture:**
+```
+/home/engineer1/
+├── .nvm/                  # Local Node.js (via nvm)
+├── .local/bin/claude      # Local Claude Code
+├── workshop_env/          # Local Python venv (mujoco, mediapy, numpy)
+└── physics_sim/           # Workspace (content, scripts, CLAUDE.md, .claude/)
 ```
 
----
-
-## 3. Phase 2: Provision Isolated Workspaces & Python Environments
-
-This automated script creates the five users, sets their temporary passwords, provisions isolated Python virtual environments, and installs the necessary physics simulation libraries.
+### Run the setup
 
 ```bash
-for i in {1..5}; do
-    echo "Configuring environment for engineer$i..."
-
-    # 1. Create user and set temporary password
-    sudo useradd -m -s /bin/bash -g workshop engineer$i
-    echo "engineer$i:<WORKSHOP_PASSWORD>" | sudo chpasswd
-
-    # 2. Create Python virtual environment
-    sudo -u engineer$i bash -c "cd ~ && python3 -m venv workshop_env"
-
-    # 3. Install MuJoCo and MediaPy (for rendering .mp4s without a GUI)
-    sudo -u engineer$i bash -c "~/workshop_env/bin/pip install mujoco mediapy numpy matplotlib Pillow"
-
-    # 4. Auto-activate the environment upon login
-    sudo -u engineer$i bash -c "echo 'source ~/workshop_env/bin/activate' >> ~/.bashrc"
-
-    # 5. Create a clean working directory and copy workshop content
-    sudo -u engineer$i bash -c "mkdir -p ~/physics_sim"
-
-    # 6. Copy MuJoCo content (Panda model + ball_and_plate) and streamer into workspace
-    # Adjust the source path to where you cloned the physics-ai-workshop repo
-    sudo cp -r /path/to/physics-ai-workshop/content/* /home/engineer$i/physics_sim/
-    sudo cp /path/to/physics-ai-workshop/mujoco_streamer.py /home/engineer$i/physics_sim/
-    sudo cp -r /path/to/physics-ai-workshop/scripts /home/engineer$i/physics_sim/scripts/
-    sudo cp /path/to/physics-ai-workshop/.gitignore /home/engineer$i/physics_sim/
-
-    # 7. Set per-user streaming port to avoid collisions
-    echo "export STREAM_PORT=1808$i" | sudo tee -a /home/engineer$i/.bashrc > /dev/null
-    echo "export MUJOCO_GL=egl" | sudo tee -a /home/engineer$i/.bashrc > /dev/null
-
-    # 8. Copy CLAUDE.md, Claude Code settings, and skills into workspace
-    sudo cp /path/to/physics-ai-workshop/CLAUDE.md /home/engineer$i/physics_sim/
-    sudo mkdir -p /home/engineer$i/physics_sim/.claude
-    sudo cp /path/to/physics-ai-workshop/.claude/settings.json /home/engineer$i/physics_sim/.claude/
-    sudo cp -r /path/to/physics-ai-workshop/.claude/skills /home/engineer$i/physics_sim/.claude/skills/
-
-    # 9. Fix ownership before git init (git init must run as the user)
-    sudo chown -R engineer$i:workshop /home/engineer$i/physics_sim/
-
-    # 10. Initialize git repo (Claude Code resolves settings from git root)
-    sudo -u engineer$i bash -c "cd ~/physics_sim && git init && git add -A && git commit -m 'Workshop setup'"
-done
+cd /path/to/physics-ai-workshop
+sudo bash setup/01_create_users.sh "$(pwd)" "PhysicsAI2026!"
 ```
 
-> **Replace** `<WORKSHOP_PASSWORD>` with the actual password for each user. For better security, generate unique passwords per user (see your SSH setup scripts).
+This single command:
+1. Creates `engineer1` through `engineer5` with the given password
+2. For each user, runs `setup/02_provision_user.sh` which:
+   - Installs `nvm` + Node.js 20 (per-user, no sudo)
+   - Installs Claude Code via npm (per-user)
+   - Creates Python venv with `mujoco`, `mediapy`, `numpy`, `matplotlib`, `Pillow`
+   - Sets `.bashrc`: auto-activate venv, `STREAM_PORT=1808N`, `MUJOCO_GL=egl`
+   - Copies workspace files (content, scripts, streamer, CLAUDE.md, .claude/)
+   - Initializes git repo (Claude Code needs this to find settings)
 
-> **Note:** The `scripts/` directory contains reference scripts with spoiler comments. These are intentionally provided so participants can run them and focus on the exploration sprint.
+All steps are idempotent — safe to re-run if something fails partway through.
+
+### Teardown after the workshop
+
+```bash
+sudo bash setup/teardown.sh
+```
+
+Removes all 5 user accounts, home directories, and the workshop group.
+
+> **Note:** The `scripts/` directory is intentionally copied to participant workspaces. Participants run these scripts directly during Sprints 1-3 and use Claude Code to explore and improve controllers in Sprints 4-5.
 
 ---
 

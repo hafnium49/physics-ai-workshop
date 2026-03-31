@@ -42,7 +42,7 @@ for i in $(seq 1 $NUM_USERS); do
 done
 
 # Temporarily allow traversal to repo dir (h_fujiwara home is 750 from SSH hardening)
-HOME_DIR=$(dirname "$REPO_DIR")
+HOME_DIR=$(echo "$REPO_DIR" | sed 's|^\(/home/[^/]*\)/.*|\1|')
 ORIG_PERMS=$(stat -c '%a' "$HOME_DIR")
 chmod 755 "$HOME_DIR"
 echo "[OK] Temporarily opened $HOME_DIR for provisioning"

@@ -41,6 +41,12 @@ for i in $(seq 1 $NUM_USERS); do
     fi
 done
 
+# Temporarily allow traversal to repo dir (h_fujiwara home is 750 from SSH hardening)
+HOME_DIR=$(dirname "$REPO_DIR")
+ORIG_PERMS=$(stat -c '%a' "$HOME_DIR")
+chmod 755 "$HOME_DIR"
+echo "[OK] Temporarily opened $HOME_DIR for provisioning"
+
 # Run per-user provisioning in parallel (no sudo needed)
 echo ""
 echo "--- Provisioning all users in parallel ---"
@@ -50,6 +56,10 @@ for i in $(seq 1 $NUM_USERS); do
 done
 wait
 echo "[OK] All users provisioned"
+
+# Restore permissions
+chmod "$ORIG_PERMS" "$HOME_DIR"
+echo "[OK] Restored $HOME_DIR to $ORIG_PERMS"
 
 echo ""
 echo "=== All $NUM_USERS users provisioned ==="

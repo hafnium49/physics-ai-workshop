@@ -1,0 +1,95 @@
+#!/usr/bin/env bash
+# Phase 2: Provision a single workshop user (no sudo required).
+# Called by 01_create_users.sh for each user, or manually:
+#
+# Usage (as the target user):
+#   bash setup/02_provision_user.sh REPO_DIR USER_NUMBER
+#
+# Example:
+#   sudo -u engineer1 bash setup/02_provision_user.sh /home/admin/physics-ai-workshop 1
+
+set -euo pipefail
+
+REPO_DIR="${1:?Usage: bash setup/02_provision_user.sh REPO_DIR USER_NUMBER}"
+USER_NUM="${2:?Usage: bash setup/02_provision_user.sh REPO_DIR USER_NUMBER}"
+STREAM_PORT="1808${USER_NUM}"
+
+echo "  Provisioning user $(whoami) (port $STREAM_PORT)..."
+
+# --- 1. Install nvm (Node Version Manager) ---
+export NVM_DIR="$HOME/.nvm"
+if [ ! -d "$NVM_DIR" ]; then
+    curl -fsSo /tmp/nvm_install.sh https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh
+    bash /tmp/nvm_install.sh >/dev/null 2>&1
+    echo "  [OK] nvm installed"
+else
+    echo "  [SKIP] nvm already installed"
+fi
+
+# Load nvm
+export NVM_DIR="$HOME/.nvm"
+# shellcheck disable=SC1091
+[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+
+# --- 2. Install Node.js ---
+if command -v node &>/dev/null; then
+    echo "  [SKIP] Node.js $(node --version) already installed"
+else
+    nvm install 20 >/dev/null 2>&1
+    nvm use 20 >/dev/null 2>&1
+    echo "  [OK] Node.js $(node --version) installed"
+fi
+
+# --- 3. Install Claude Code ---
+if command -v claude &>/dev/null; then
+    echo "  [SKIP] Claude Code $(claude --version 2>/dev/null || echo 'installed') already installed"
+else
+    npm install -g @anthropic-ai/claude-code >/dev/null 2>&1
+    echo "  [OK] Claude Code installed"
+fi
+
+# --- 4. Create Python virtual environment ---
+if [ -d "$HOME/workshop_env" ]; then
+    echo "  [SKIP] Python venv already exists"
+else
+    python3 -m venv "$HOME/workshop_env"
+    "$HOME/workshop_env/bin/pip" install --quiet mujoco mediapy numpy matplotlib Pillow
+    echo "  [OK] Python venv created with mujoco, mediapy, numpy, matplotlib, Pillow"
+fi
+
+# --- 5. Set up .bashrc (idempotent) ---
+BASHRC="$HOME/.bashrc"
+grep -q "workshop_env" "$BASHRC" 2>/dev/null || echo 'source ~/workshop_env/bin/activate' >> "$BASHRC"
+grep -q "STREAM_PORT" "$BASHRC" 2>/dev/null || echo "export STREAM_PORT=$STREAM_PORT" >> "$BASHRC"
+grep -q "MUJOCO_GL" "$BASHRC" 2>/dev/null || echo 'export MUJOCO_GL=egl' >> "$BASHRC"
+echo "  [OK] .bashrc configured (venv, STREAM_PORT=$STREAM_PORT, MUJOCO_GL=egl)"
+
+# --- 6. Copy workspace files ---
+WORKSPACE="$HOME/physics_sim"
+mkdir -p "$WORKSPACE"
+mkdir -p "$WORKSPACE/.claude"
+
+# Content files
+cp -r "$REPO_DIR/content/"* "$WORKSPACE/"
+cp "$REPO_DIR/mujoco_streamer.py" "$WORKSPACE/"
+cp -r "$REPO_DIR/scripts" "$WORKSPACE/scripts/"
+cp "$REPO_DIR/.gitignore" "$WORKSPACE/"
+
+# Claude Code configuration
+cp "$REPO_DIR/CLAUDE.md" "$WORKSPACE/"
+cp "$REPO_DIR/.claude/settings.json" "$WORKSPACE/.claude/"
+cp -r "$REPO_DIR/.claude/skills" "$WORKSPACE/.claude/skills/"
+echo "  [OK] Workspace files copied to $WORKSPACE"
+
+# --- 7. Initialize git repo ---
+cd "$WORKSPACE"
+if [ -d ".git" ]; then
+    echo "  [SKIP] Git repo already initialized"
+else
+    git init -q
+    git add -A
+    git commit -q -m "Workshop setup"
+    echo "  [OK] Git repo initialized"
+fi
+
+echo "  [DONE] User $(whoami) ready"

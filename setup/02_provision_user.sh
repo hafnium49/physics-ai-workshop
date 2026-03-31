@@ -19,8 +19,9 @@ echo "  Provisioning user $(whoami) (port $STREAM_PORT)..."
 # --- 1. Install nvm (Node Version Manager) ---
 export NVM_DIR="$HOME/.nvm"
 if [ ! -d "$NVM_DIR" ]; then
-    curl -fsSo /tmp/nvm_install.sh https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh
-    bash /tmp/nvm_install.sh >/dev/null 2>&1
+    curl -fsSo "/tmp/nvm_install_${USER_NUM}.sh" https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh
+    bash "/tmp/nvm_install_${USER_NUM}.sh" >/dev/null 2>&1
+    rm -f "/tmp/nvm_install_${USER_NUM}.sh"
     echo "  [OK] nvm installed"
 else
     echo "  [SKIP] nvm already installed"
@@ -80,6 +81,8 @@ cp -r "$REPO_DIR/.claude/skills" "$WORKSPACE/.claude/skills/"
 echo "  [OK] Workspace files copied to $WORKSPACE"
 
 # --- 7. Initialize git repo ---
+git config --global user.name "engineer${USER_NUM}"
+git config --global user.email "engineer${USER_NUM}@workshop.local"
 cd "$WORKSPACE"
 if [ -d ".git" ]; then
     echo "  [SKIP] Git repo already initialized"

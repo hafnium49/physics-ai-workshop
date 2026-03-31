@@ -29,6 +29,7 @@ This is a 1-hour hands-on workshop where material engineers (not software develo
 - **Keep explanations simple** — avoid programming jargon. Explain physics/control concepts when introducing them.
 - **Always include visual output** in simulation scripts so the user can see results.
 - Use MuJoCo's Python bindings (`import mujoco`).
+- **Never output sensitive infrastructure details** — IP addresses, SSH key paths, passwords, or internal hostnames. These belong in the private `dgx-spark-playbooks` repository, not in scripts or terminal output.
 
 ## Workshop Goal
 

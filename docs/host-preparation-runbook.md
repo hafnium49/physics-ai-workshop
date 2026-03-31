@@ -7,11 +7,28 @@
 
 This document outlines the software and environment preparation required on the host machine prior to the 1-hour Physics-AI workshop. The five participating material engineers will connect via VS Code Remote SSH into isolated home directories. They need pre-configured Python virtual environments containing MuJoCo and mediapy. To share a single consumer Claude Max subscription without distributing credentials, the host must manually perform browserless OAuth authentication for each account in advance.
 
-> **Note:** This runbook covers software/environment setup only. Network access and SSH tunnel configuration are handled separately by the host administrator.
+> **Note:** This runbook covers software/environment setup only. Network access and SSH tunnel configuration are handled separately (see Phase 0 below).
 
 ---
 
-## 2. Phases 1+2: Create Users & Provision Environments
+## 2. Phase 0: Network & SSH Tunnel Setup
+
+The SSH tunnel architecture (GX10 → OCI VPS → Azure VM → participant laptops) is managed by the `dgx-spark-playbooks` repository. Complete these steps BEFORE running Phase 1 below.
+
+See:
+- `dgx-spark-playbooks/docs/workshop-ssh-softening-plan.md` — full architecture, security hardening, dead-man's switch
+- `dgx-spark-playbooks/bootstrap-workshop.sh` — automated GX10 tunnel + SSH config setup
+- `dgx-spark-playbooks/smoke-test-workshop.sh` — tunnel and port verification
+
+Key items that must be in place:
+- SSH password auth scoped to `engineer1-5` via `/etc/ssh/sshd_config.d/50-workshop-password-auth.conf`
+- GX10 reverse tunnel to OCI VPS running (port 22222)
+- Azure VM gateway tunnel running
+- `/home/h_fujiwara` permissions set to 750
+
+---
+
+## 3. Phase 1: Create Users & Provision Environments
 
 Everything is handled by two setup scripts in the `setup/` directory. Each user gets a fully isolated local environment — no global Node.js or system-level Python changes.
 
@@ -55,7 +72,7 @@ Removes all 5 user accounts, home directories, and the workshop group.
 
 ---
 
-## 4. Phase 3: The Claude Code Authentication Trick (OAuth)
+## 4. Phase 2: The Claude Code Authentication Trick (OAuth)
 
 Because you are using a consumer Claude Max subscription rather than an Enterprise API key, you cannot simply export an API key variable. You must authenticate each account manually.
 
@@ -88,7 +105,7 @@ Ensure you are logged into your Anthropic/Claude account in your primary web bro
 
 ---
 
-## 5. Phase 4: Pre-Flight Validation
+## 5. Phase 3: Pre-Flight Validation
 
 ### Automated pre-flight check
 

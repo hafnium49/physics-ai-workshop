@@ -399,8 +399,8 @@ class LiveStreamer:
                 return  # HTTPログを抑制（コンソールが見づらくなるため）
 
         try:
-            # 全ネットワークインターフェース(0.0.0.0)でHTTPサーバーを起動
-            self._server = _StreamingServer(("0.0.0.0", self._port), _MJPEGHandler)
+            # ローカルホストのみでHTTPサーバーを起動（VS Codeポート転送経由でアクセス）
+            self._server = _StreamingServer(("127.0.0.1", self._port), _MJPEGHandler)
         except OSError:
             print(f"\nエラー: ポート {self._port} は既に使用中です。")
             print("先に他のスクリプトを停止してください（Ctrl+C）、その後再実行してください。")

@@ -48,12 +48,10 @@ else
     echo "  [OK] Claude Code installed"
 fi
 
-# --- 4. Create Python virtual environment ---
-if [ -d "$HOME/workshop_env" ]; then
-    echo "  [SKIP] Python venv already exists"
-else
-    python3 -m venv "$HOME/workshop_env"
-    "$HOME/workshop_env/bin/pip" install --quiet mujoco mediapy numpy matplotlib Pillow
+# --- 4. Create Python virtual environment (always run pip — it's idempotent) ---
+python3 -m venv "$HOME/workshop_env" 2>/dev/null || true
+"$HOME/workshop_env/bin/pip" install --quiet mujoco mediapy numpy matplotlib Pillow
+if [ $? -eq 0 ]; then
     echo "  [OK] Python venv created with mujoco, mediapy, numpy, matplotlib, Pillow"
 fi
 

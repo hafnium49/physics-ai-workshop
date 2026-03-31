@@ -45,7 +45,7 @@ Everything is handled by two setup scripts in the `setup/` directory. Each user 
 
 ```bash
 cd /path/to/physics-ai-workshop
-sudo bash setup/01_create_users.sh "$(pwd)" "PhysicsAI2026!"
+sudo bash setup/01_create_users.sh "$(pwd)" "<WORKSHOP_PASSWORD>"
 ```
 
 This single command:

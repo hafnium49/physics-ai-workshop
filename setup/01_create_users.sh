@@ -6,7 +6,7 @@
 #   sudo bash setup/01_create_users.sh [REPO_DIR] [PASSWORD]
 #
 # Example:
-#   sudo bash setup/01_create_users.sh /home/admin/physics-ai-workshop PhysicsAI2026!
+#   sudo bash setup/01_create_users.sh /home/admin/physics-ai-workshop <WORKSHOP_PASSWORD>
 
 set -euo pipefail
 
@@ -31,20 +31,25 @@ for i in $(seq 1 $NUM_USERS); do
     echo ""
     echo "--- Setting up $USER ---"
 
-    # Create user if not exists
+    # Create user if not exists (serial — needs sudo)
     if id "$USER" &>/dev/null; then
-        echo "[SKIP] User $USER already exists"
+        echo "[SKIP] User $USER already exists — password NOT changed"
     else
         useradd -m -s /bin/bash -g workshop "$USER"
         echo "$USER:$PASSWORD" | chpasswd
         echo "[OK] User $USER created"
     fi
-
-    # Run per-user provisioning as the user
-    sudo -u "$USER" bash "$REPO_DIR/setup/02_provision_user.sh" "$REPO_DIR" "$i"
-
-    echo "[OK] $USER provisioned"
 done
+
+# Run per-user provisioning in parallel (no sudo needed)
+echo ""
+echo "--- Provisioning all users in parallel ---"
+for i in $(seq 1 $NUM_USERS); do
+    USER="engineer$i"
+    sudo -u "$USER" bash "$REPO_DIR/setup/02_provision_user.sh" "$REPO_DIR" "$i" &
+done
+wait
+echo "[OK] All users provisioned"
 
 echo ""
 echo "=== All $NUM_USERS users provisioned ==="

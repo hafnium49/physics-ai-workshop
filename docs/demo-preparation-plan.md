@@ -293,3 +293,24 @@ Changes across 11 files:
 - `.claude/settings.local.json` — removed stale `--port 8080` test permission
 
 Verified: `grep -rn "8080" *.py *.md` returns only `18080` matches. Preflight all 9 checks pass.
+
+---
+
+## Workshop Outcome — 2026-04-01
+
+**ワークショップは成功しました。** 5名の素材エンジニア全員がPIDコントローラの改善に成功。
+
+### 実行結果
+- 5スプリント全て予定通り実施（探索→診断→理解→実験→自走型R&D）
+- 5名が5通りの異なる制御戦略を開発
+- 3名が独立して `data.qvel` による速度直接利用を発見（PID微分項の限界を超える洞察）
+- 川原井様は7本の探索スクリプトを自動生成し、完全維持率を73%→91%に向上
+
+### 準備中に発見・修正したバグ
+- **Kd=2 問題:** `03_optimize_pid.py` の `make_controller` が Kd=2 を使用 → dt=0.005で400倍増幅 → 0.3秒で落下。Kd=0に修正し、スコアが0.3→3.3に回復
+- **AllowTcpForwarding:** SSH Match blockが `no` → VS Code接続不可。`local` に変更
+- **動的ポート転送:** VS Code Remote SSHがトンネルチェーンで失敗。`enableDynamicForwarding: false` で解決
+- **SSHホストエイリアス衝突:** 全参加者が同じ `workshop-gx10` → per-participant `workshop-gx10-N` に変更
+
+### 参加者の成果詳細
+`dgx-spark-playbooks/docs/workshop-results.md` に日本語チューターレビューとして記録済み。

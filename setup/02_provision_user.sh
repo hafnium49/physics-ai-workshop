@@ -63,34 +63,18 @@ grep -q "STREAM_PORT" "$BASHRC" 2>/dev/null || echo "export STREAM_PORT=$STREAM_
 grep -q "MUJOCO_GL" "$BASHRC" 2>/dev/null || echo 'export MUJOCO_GL=egl' >> "$BASHRC"
 echo "  [OK] .bashrc configured (venv, STREAM_PORT=$STREAM_PORT, MUJOCO_GL=egl)"
 
-# --- 6. Copy workspace files ---
+# --- 6. Clone workspace from GitHub ---
 WORKSPACE="$HOME/physics_sim"
-mkdir -p "$WORKSPACE"
-mkdir -p "$WORKSPACE/.claude"
-
-# Content files
-cp -r "$REPO_DIR/content/"* "$WORKSPACE/"
-cp "$REPO_DIR/mujoco_streamer.py" "$WORKSPACE/"
-cp -r "$REPO_DIR/scripts" "$WORKSPACE/scripts/"
-cp "$REPO_DIR/.gitignore" "$WORKSPACE/"
-
-# Claude Code configuration
-cp "$REPO_DIR/CLAUDE.md" "$WORKSPACE/"
-cp "$REPO_DIR/.claude/settings.json" "$WORKSPACE/.claude/"
-cp -r "$REPO_DIR/.claude/skills" "$WORKSPACE/.claude/skills/"
-echo "  [OK] Workspace files copied to $WORKSPACE"
-
-# --- 7. Initialize git repo ---
 git config --global user.name "engineer${USER_NUM}"
 git config --global user.email "engineer${USER_NUM}@workshop.local"
-cd "$WORKSPACE"
-if [ -d ".git" ]; then
-    echo "  [SKIP] Git repo already initialized"
+
+if [ -d "$WORKSPACE/.git" ]; then
+    echo "  [SKIP] Workspace already cloned — pulling latest"
+    cd "$WORKSPACE" && git pull -q 2>/dev/null || true
 else
-    git init -q
-    git add -A
-    git commit -q -m "Workshop setup"
-    echo "  [OK] Git repo initialized"
+    rm -rf "$WORKSPACE" 2>/dev/null
+    git clone -q https://github.com/hafnium49/physics-ai-workshop.git "$WORKSPACE"
+    echo "  [OK] Workspace cloned from GitHub"
 fi
 
 echo "  [DONE] User $(whoami) ready"

@@ -26,7 +26,7 @@ def make_controller(model, dt, home):
     Uses joint6 (ctrl[5]) for X and joint7 (ctrl[6]) for Y, positive sign.
     """
     kp = 2.0
-    kd = 2.0
+    kd = 0.0
     prev_ex = 0.0
     prev_ey = 0.0
 

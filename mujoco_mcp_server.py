@@ -13,7 +13,7 @@ mcp = FastMCP("physics-workshop")
 WORKSHOP_DIR = Path(__file__).parent
 SCRIPTS_DIR = WORKSHOP_DIR / "scripts"
 STREAM_PORT = int(os.environ.get("STREAM_PORT", "18080"))
-MUJOCO_GL = os.environ.get("MUJOCO_GL", "egl")
+MUJOCO_GL = os.environ.get("MUJOCO_GL", "osmesa")
 
 # Safe environment for subprocess execution
 SAFE_ENV = {

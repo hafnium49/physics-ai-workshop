@@ -80,7 +80,7 @@ def validate_controller_code(code: str) -> tuple[bool, str]:
 SAFE_ENV = {
     "PATH": os.environ.get("PATH", "/usr/bin:/bin:/usr/local/bin"),
     "HOME": "/tmp",
-    "MUJOCO_GL": os.environ.get("MUJOCO_GL", "egl"),
+    "MUJOCO_GL": os.environ.get("MUJOCO_GL", "osmesa"),
     "PYTHONPATH": os.environ.get("PYTHONPATH", ""),
     "STREAM_PORT": os.environ.get("STREAM_PORT", "18080"),
 }

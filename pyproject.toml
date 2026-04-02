@@ -6,4 +6,5 @@ requires-python = ">=3.13"
 dependencies = [
     "mujoco>=3.6.0",
     "fastmcp>=2.0",
+    "mediapy>=1.2.6",
 ]

@@ -327,6 +327,17 @@ class LiveStreamer:
         # HTTPリクエストハンドラ（各リクエストごとにインスタンスが作られる）
         class _MJPEGHandler(BaseHTTPRequestHandler):
 
+            def end_headers(self):
+                # CORS対応（iframe/外部アクセス用）
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+                self.send_header("Access-Control-Allow-Headers", "Content-Type")
+                super().end_headers()
+
+            def do_OPTIONS(self):
+                self.send_response(204)
+                self.end_headers()
+
             def do_GET(self):
                 # GET "/" — HTMLページを返す（ブラウザで最初にアクセスした時）
                 if self.path == "/":
@@ -399,8 +410,8 @@ class LiveStreamer:
                 return  # HTTPログを抑制（コンソールが見づらくなるため）
 
         try:
-            # ローカルホストのみでHTTPサーバーを起動（VS Codeポート転送経由でアクセス）
-            self._server = _StreamingServer(("127.0.0.1", self._port), _MJPEGHandler)
+            # 全インターフェースでHTTPサーバーを起動（Docker/iframe外部アクセス対応）
+            self._server = _StreamingServer(("0.0.0.0", self._port), _MJPEGHandler)
         except OSError:
             print(f"\nエラー: ポート {self._port} は既に使用中です。")
             print("先に他のスクリプトを停止してください（Ctrl+C）、その後再実行してください。")

@@ -75,7 +75,7 @@ _HTML_PAGE = """\
 
   <div id="container" style="position:relative; display:inline-block;">
     <!-- /stream エンドポイントからMJPEGを受信して表示 -->
-    <img id="stream" src="/stream"
+    <img id="stream" src="stream"
          style="border:2px solid #333; border-radius:8px;
                 max-width:95vw; max-height:85vh; display:block;"
          draggable="false" />
@@ -113,7 +113,7 @@ _HTML_PAGE = """\
       // 接続切断時: 赤インジケーター表示、1秒後に再接続を試行
       statusEl.style.color = '#f87171';
       fpsEl.textContent = '再接続中...';
-      setTimeout(() => { img.src = '/stream?' + Date.now(); }, 1000);
+      setTimeout(() => { img.src = 'stream?' + Date.now(); }, 1000);
     };
     // 1秒ごとにFPSを計算して表示
     setInterval(() => {
@@ -195,7 +195,7 @@ _HTML_PAGE = """\
       if (commands.length === 0) return;  // 操作なしならHTTPリクエストを送らない
       inflight = true; lastSendTime = now;
       // POST /camera にJSON形式でカメラコマンドを送信
-      fetch('/camera', {
+      fetch('camera', {
         method:'POST',
         headers:{'Content-Type':'application/json'},
         body: JSON.stringify({commands})
@@ -207,7 +207,7 @@ _HTML_PAGE = """\
     document.addEventListener('keydown', (e) => {
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
       if (e.key === 'r' || e.key === 'R') {
-        fetch('/camera', {
+        fetch('camera', {
           method:'POST',
           headers:{'Content-Type':'application/json'},
           body: JSON.stringify({commands:[{action:'reset'}]})
@@ -386,6 +386,22 @@ class LiveStreamer:
                             self.wfile.flush()  # 即座にクライアントに送出
                     except (BrokenPipeError, ConnectionResetError):
                         pass  # ブラウザが閉じられた場合は静かに終了
+
+                # GET "/snapshot" — 単一JPEGスナップショット（ChatKit Image互換）
+                elif self.path.startswith("/snapshot"):
+                    frame = stream_state.get_frame()
+                    if frame is not None:
+                        buf = io.BytesIO()
+                        Image.fromarray(frame).save(buf, format="JPEG", quality=80)
+                        jpeg_bytes = buf.getvalue()
+                        self.send_response(200)
+                        self.send_header("Content-Type", "image/jpeg")
+                        self.send_header("Content-Length", str(len(jpeg_bytes)))
+                        self.send_header("Cache-Control", "no-cache, no-store")
+                        self.end_headers()
+                        self.wfile.write(jpeg_bytes)
+                    else:
+                        self.send_error(503)
 
                 else:
                     self.send_error(404)

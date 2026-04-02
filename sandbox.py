@@ -77,8 +77,9 @@ def validate_controller_code(code: str) -> tuple[bool, str]:
     return True, ""
 
 
+_VENV_BIN = str(Path(__file__).parent / ".venv" / "bin")
 SAFE_ENV = {
-    "PATH": os.environ.get("PATH", "/usr/bin:/bin:/usr/local/bin"),
+    "PATH": f"{_VENV_BIN}:{os.environ.get('PATH', '/usr/bin:/bin:/usr/local/bin')}",
     "HOME": "/tmp",
     "MUJOCO_GL": os.environ.get("MUJOCO_GL", "osmesa"),
     "PYTHONPATH": os.environ.get("PYTHONPATH", ""),

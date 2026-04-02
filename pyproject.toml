@@ -8,3 +8,8 @@ dependencies = [
     "fastmcp>=2.0",
     "mediapy>=1.2.6",
 ]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+]

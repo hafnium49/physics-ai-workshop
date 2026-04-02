@@ -28,8 +28,10 @@ MUJOCO_GL = os.environ.get("MUJOCO_GL", "osmesa")
 MAX_SIM_DURATION = 300  # 5 minutes auto-timeout
 
 # Safe environment for subprocess execution
+# Prepend the venv bin/ to PATH so subprocess finds the correct python with mujoco installed
+_VENV_BIN = str(WORKSHOP_DIR / ".venv" / "bin")
 SAFE_ENV = {
-    "PATH": os.environ.get("PATH", "/usr/bin:/bin:/usr/local/bin"),
+    "PATH": f"{_VENV_BIN}:{os.environ.get('PATH', '/usr/bin:/bin:/usr/local/bin')}",
     "HOME": "/tmp",
     "MUJOCO_GL": MUJOCO_GL,
     "PYTHONPATH": str(WORKSHOP_DIR),
@@ -44,17 +46,33 @@ _sim_lock = threading.Lock()
 
 # ── Helpers ───────────────────────────────────────────────────────────
 
-def _wait_for_port(port: int, timeout: float = 10.0) -> bool:
-    """Poll until the streamer port is accepting connections."""
+def _wait_for_port(port: int, timeout: float = 20.0, proc: subprocess.Popen | None = None) -> bool:
+    """Poll until the streamer port is accepting connections.
+    If proc is given, fail fast if the process dies during startup."""
     deadline = time.monotonic() + timeout
     interval = 0.2
     while time.monotonic() < deadline:
+        if proc and proc.poll() is not None:
+            return False  # process died, fail immediately
         try:
             with socket.create_connection(("127.0.0.1", port), timeout=0.5):
                 return True
         except (ConnectionRefusedError, OSError):
             time.sleep(interval)
             interval = min(interval * 1.5, 1.0)
+    return False
+
+
+def _wait_for_port_free(port: int, timeout: float = 5.0) -> bool:
+    """Poll until the port stops accepting connections (released after kill)."""
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        try:
+            with socket.create_connection(("127.0.0.1", port), timeout=0.3):
+                pass  # still open
+        except (ConnectionRefusedError, OSError):
+            return True  # port is free
+        time.sleep(0.2)
     return False
 
 
@@ -95,6 +113,8 @@ def _start_streaming_script(script_name: str, args: list[str] | None = None) -> 
 
     # Kill any previous simulation first
     _stop_active_sim()
+    # Wait for port to be released before starting new process
+    _wait_for_port_free(STREAM_PORT, timeout=5.0)
 
     script_path = SCRIPTS_DIR / script_name
     cmd = ["python", str(script_path)]
@@ -103,11 +123,15 @@ def _start_streaming_script(script_name: str, args: list[str] | None = None) -> 
     # No --no-stream: script enters infinite streaming loop
     cmd.extend(["--port", str(STREAM_PORT)])
 
+    # Capture stderr to a fixed log file for diagnosis
+    _stderr_log = Path("/tmp/mujoco_sim_stderr.log")
+    err_file = open(_stderr_log, "w")
+
     with _sim_lock:
         _active_sim = subprocess.Popen(
             cmd,
             stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
+            stderr=err_file,
             env=SAFE_ENV,
             cwd=str(WORKSHOP_DIR),
         )
@@ -117,20 +141,28 @@ def _start_streaming_script(script_name: str, args: list[str] | None = None) -> 
         _auto_stop_timer.daemon = True
         _auto_stop_timer.start()
 
-    # Wait for streamer port to be ready (not a fixed sleep)
-    if not _wait_for_port(STREAM_PORT, timeout=10.0):
-        # Check if process crashed during startup
+    # Wait for streamer port — fail fast if process dies
+    proc_ref = _active_sim
+    if not _wait_for_port(STREAM_PORT, timeout=20.0, proc=proc_ref):
+        # Read stderr for diagnosis
+        err_file.flush()
+        try:
+            err_text = _stderr_log.read_text()[-500:]
+        except Exception:
+            err_text = ""
+
         with _sim_lock:
             if _active_sim and _active_sim.poll() is not None:
+                rc = _active_sim.returncode
                 _stop_active_sim()
                 return {
                     "success": False,
-                    "stderr": "シミュレーション起動に失敗しました",
+                    "stderr": f"シミュレーション起動失敗 (exit={rc}): {err_text}",
                     "streaming": False,
                 }
         return {
             "success": False,
-            "stderr": "ストリーマーが起動しませんでした（タイムアウト）",
+            "stderr": f"ストリーマー起動タイムアウト（20秒）: {err_text}",
             "streaming": False,
         }
 

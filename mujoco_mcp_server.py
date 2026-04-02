@@ -9,7 +9,6 @@ Two execution modes:
 """
 
 import atexit
-import json
 import os
 import re
 import socket

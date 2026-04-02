@@ -9,6 +9,7 @@ Two execution modes:
 """
 
 import atexit
+import http.client
 import os
 import re
 import socket
@@ -73,6 +74,23 @@ def _wait_for_port_free(port: int, timeout: float = 5.0) -> bool:
         except (ConnectionRefusedError, OSError):
             return True  # port is free
         time.sleep(0.2)
+    return False
+
+
+def _wait_for_snapshot(port: int, timeout: float = 10.0) -> bool:
+    """Poll /snapshot until it returns 200 (first frame rendered)."""
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        try:
+            conn = http.client.HTTPConnection("127.0.0.1", port, timeout=1)
+            conn.request("GET", "/snapshot")
+            resp = conn.getresponse()
+            conn.close()
+            if resp.status == 200:
+                return True
+        except Exception:
+            pass
+        time.sleep(0.3)
     return False
 
 
@@ -165,6 +183,9 @@ def _start_streaming_script(script_name: str, args: list[str] | None = None) -> 
             "stderr": f"ストリーマー起動タイムアウト（20秒）: {err_text}",
             "streaming": False,
         }
+
+    # Wait for first frame to be rendered (snapshot returns 200, not 503)
+    _wait_for_snapshot(STREAM_PORT, timeout=10.0)
 
     return {
         "success": True,

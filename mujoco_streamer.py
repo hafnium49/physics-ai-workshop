@@ -330,13 +330,32 @@ class LiveStreamer:
             def end_headers(self):
                 # CORS対応（iframe/外部アクセス用）
                 self.send_header("Access-Control-Allow-Origin", "*")
-                self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+                self.send_header("Access-Control-Allow-Methods", "GET, HEAD, POST, OPTIONS")
                 self.send_header("Access-Control-Allow-Headers", "Content-Type")
                 super().end_headers()
 
             def do_OPTIONS(self):
                 self.send_response(204)
                 self.end_headers()
+
+            def do_HEAD(self):
+                """HEAD対応 — ChatKitがImage読み込み前にURLを検証するために送信"""
+                if self.path == "/":
+                    self.send_response(200)
+                    self.send_header("Content-Type", "text/html")
+                    self.send_header("Content-Length", str(len(_HTML_PAGE)))
+                    self.end_headers()
+                elif self.path.startswith("/snapshot"):
+                    self.send_response(200)
+                    self.send_header("Content-Type", "image/jpeg")
+                    self.send_header("Cache-Control", "no-cache, no-store")
+                    self.end_headers()
+                elif self.path.startswith("/stream"):
+                    self.send_response(200)
+                    self.send_header("Content-Type", "multipart/x-mixed-replace; boundary=FRAME")
+                    self.end_headers()
+                else:
+                    self.send_error(404)
 
             def do_GET(self):
                 # GET "/" — HTMLページを返す（ブラウザで最初にアクセスした時）
@@ -389,7 +408,11 @@ class LiveStreamer:
 
                 # GET "/snapshot" — 単一JPEGスナップショット（ChatKit Image互換）
                 elif self.path.startswith("/snapshot"):
-                    frame = stream_state.get_frame()
+                    frame = None
+                    for _ in range(3):
+                        frame = stream_state.get_frame()
+                        if frame is not None:
+                            break
                     if frame is not None:
                         buf = io.BytesIO()
                         Image.fromarray(frame).save(buf, format="JPEG", quality=80)

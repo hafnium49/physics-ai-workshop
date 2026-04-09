@@ -16,8 +16,13 @@
       "Bash(head:*)",
       "Bash(tail:*)",
       "Bash(git:*)",
-      "Bash(timeout:*)"
+      "Bash(timeout:*)",
+      "Bash(grep -E \"\\\\.\\(sh|py\\)$\")",
+      "Bash(wc -l /home/h_fujiwara/projects/physics-ai-workshop/scripts/*.py)",
+      "Read(//home/h_fujiwara/projects/physics-ai-workshop/**)"
     ],
-    "additionalDirectories": ["/tmp"]
+    "additionalDirectories": [
+      "/tmp"
+    ]
   }
 }

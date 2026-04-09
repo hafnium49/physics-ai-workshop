@@ -19,7 +19,15 @@
       "Bash(timeout:*)",
       "Bash(grep -E \"\\\\.\\(sh|py\\)$\")",
       "Bash(wc -l /home/h_fujiwara/projects/physics-ai-workshop/scripts/*.py)",
-      "Read(//home/h_fujiwara/projects/physics-ai-workshop/**)"
+      "Read(//home/h_fujiwara/projects/physics-ai-workshop/**)",
+      "Bash(who)",
+      "Bash(last -5)",
+      "Bash(wc -l /tmp/05_challenge_engineer*.py)",
+      "Read(//var/log/**)",
+      "Bash(wc -l /tmp/diff_engineer*.txt)",
+      "Bash(grep -c \"^+\" /tmp/diff_engineer*.txt)",
+      "Bash(chmod +x /tmp/extract-workshop-logs.sh)",
+      "Bash(bash -n /tmp/extract-workshop-logs.sh)"
     ],
     "additionalDirectories": [
       "/tmp"

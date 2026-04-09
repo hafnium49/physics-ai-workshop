@@ -28,7 +28,8 @@
       "Bash(grep -c \"^+\" /tmp/diff_engineer*.txt)",
       "Bash(chmod +x /tmp/extract-workshop-logs.sh)",
       "Bash(bash -n /tmp/extract-workshop-logs.sh)",
-      "Bash(echo \"EXITCODE=$?\")"
+      "Bash(echo \"EXITCODE=$?\")",
+      "Bash(wc -w /tmp/research-*.md)"
     ],
     "additionalDirectories": [
       "/tmp",

@@ -30,7 +30,10 @@
       "Bash(bash -n /tmp/extract-workshop-logs.sh)",
       "Bash(echo \"EXITCODE=$?\")",
       "Bash(wc -w /tmp/research-*.md)",
-      "Bash(bash /tmp/verify.sh)"
+      "Bash(bash /tmp/verify.sh)",
+      "Bash(conda env:*)",
+      "Bash(~/miniforge3/bin/python -c \"import mujoco, mediapy; print\\(mujoco.__version__\\)\")",
+      "Bash(~/miniforge3/envs/gr00t/bin/python -c \"import mujoco, mediapy; print\\(mujoco.__version__\\)\")"
     ],
     "additionalDirectories": [
       "/tmp",

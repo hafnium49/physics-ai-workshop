@@ -108,6 +108,10 @@ def interp_cam(t):
 
 # ─── Renderer + camera ────────────────────────────────────────────────
 WIDTH, HEIGHT, FPS = 1280, 720, 30
+# Bump the model's offscreen framebuffer (default 640x480) before constructing
+# the Renderer so it can render at HD resolution.
+model.vis.global_.offwidth = WIDTH
+model.vis.global_.offheight = HEIGHT
 renderer = mujoco.Renderer(model, height=HEIGHT, width=WIDTH)
 cam = mujoco.MjvCamera()
 cam.type = mujoco.mjtCamera.mjCAMERA_FREE

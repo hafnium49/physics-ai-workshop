@@ -33,7 +33,10 @@
       "Bash(bash /tmp/verify.sh)",
       "Bash(conda env:*)",
       "Bash(~/miniforge3/bin/python -c \"import mujoco, mediapy; print\\(mujoco.__version__\\)\")",
-      "Bash(~/miniforge3/envs/gr00t/bin/python -c \"import mujoco, mediapy; print\\(mujoco.__version__\\)\")"
+      "Bash(~/miniforge3/envs/gr00t/bin/python -c \"import mujoco, mediapy; print\\(mujoco.__version__\\)\")",
+      "Bash(/home/h_fujiwara/projects/physics-ai-workshop/.venv/bin/python -c \"import mujoco, mediapy, numpy; print\\('mujoco', mujoco.__version__\\)\")",
+      "Bash(.venv/bin/python scripts/make_results_video.py)",
+      "Bash(ffprobe -v error -select_streams v:0 -show_entries stream=width,height,r_frame_rate,nb_frames,duration -of default=nw=1 videos/tsuchida-best-result.mp4)"
     ],
     "additionalDirectories": [
       "/tmp",

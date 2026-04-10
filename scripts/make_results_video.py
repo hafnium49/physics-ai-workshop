@@ -86,12 +86,18 @@ def reset_scene():
 reset_scene()
 
 # ─── Camera choreography (t_sec, azimuth_deg, elevation_deg, distance_m) ──
+# 9 keyframes over 30s — wide establishing, slow orbit one-and-a-quarter
+# revolutions, varying elevation, tight middle, pulled-back finale.
 KEYS = [
-    (0.0,  45.0, -25.0, 1.5),
-    (2.0,  90.0, -15.0, 0.9),
-    (5.0, 135.0, -10.0, 0.7),
-    (8.0, 180.0, -20.0, 1.0),
-    (10.0, 225.0, -25.0, 1.2),
+    (0.0,   45.0, -30.0, 1.4),
+    (4.0,   90.0, -20.0, 0.95),
+    (8.0,  135.0, -15.0, 0.75),
+    (12.0, 180.0, -10.0, 0.65),
+    (16.0, 225.0, -15.0, 0.70),
+    (20.0, 270.0, -25.0, 0.85),
+    (24.0, 315.0, -30.0, 1.00),
+    (28.0, 360.0, -35.0, 1.20),
+    (30.0, 405.0, -40.0, 1.40),
 ]
 
 
@@ -107,7 +113,7 @@ def interp_cam(t):
 
 
 # ─── Renderer + camera ────────────────────────────────────────────────
-WIDTH, HEIGHT, FPS = 1280, 720, 30
+WIDTH, HEIGHT, FPS = 720, 1280, 30  # vertical / portrait
 # Bump the model's offscreen framebuffer (default 640x480) before constructing
 # the Renderer so it can render at HD resolution.
 model.vis.global_.offwidth = WIDTH
@@ -117,7 +123,7 @@ cam = mujoco.MjvCamera()
 cam.type = mujoco.mjtCamera.mjCAMERA_FREE
 
 # ─── Simulation loop ──────────────────────────────────────────────────
-DURATION = 10.0
+DURATION = 30.0
 n_steps = int(DURATION / dt)
 render_every = max(1, int(round(1.0 / (FPS * dt))))
 

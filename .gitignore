@@ -33,3 +33,19 @@ Thumbs.db
 
 # Jupyter
 .ipynb_checkpoints/
+
+# >>> harden.sh secret-file patterns >>>
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+*.keystore
+id_rsa*
+id_ed25519*
+id_ecdsa*
+*credential*
+*secret*
+*.pre-harden.bak
+# <<< harden.sh secret-file patterns <<<

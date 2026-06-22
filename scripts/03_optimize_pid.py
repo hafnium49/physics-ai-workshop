@@ -215,6 +215,27 @@ if __name__ == "__main__":
         # 最も長くボールを維持できたゲインの組み合わせを選択
         best = max(results, key=lambda x: x[2])
         print(f"\n最良: Kp={best[0]}, Kd={best[1]}, 維持時間={best[2]:.1f}秒")
+
+        # Sidecar file: surface the optimizer's choice to the MCP server
+        # (which runs us with stdout=DEVNULL to avoid pipe-buffer deadlock).
+        # Write atomically (tmp + os.replace) so a partial read is impossible.
+        import json as _json
+        _sidecar_path = os.environ.get("PID_BEST_OUT", "/tmp/mujoco_best_pid.json")
+        _sidecar_payload = {
+            "best_kp": float(best[0]),
+            "best_kd": float(best[1]),
+            "best_survival": float(best[2]),
+        }
+        try:
+            _sidecar_tmp = _sidecar_path + ".tmp"
+            with open(_sidecar_tmp, "w") as _f:
+                _json.dump(_sidecar_payload, _f)
+            os.replace(_sidecar_tmp, _sidecar_path)
+        except OSError as _e:
+            # Non-fatal: continue with the simulation. The agent will fall
+            # back to the existing "auto-search" disclaimer if the file is
+            # missing.
+            print(f"警告: サイドカーファイル書き込み失敗: {_e}", file=sys.stderr)
     except KeyboardInterrupt:
         print("\nグリッド探索が中断されました。")
         raise SystemExit(0)

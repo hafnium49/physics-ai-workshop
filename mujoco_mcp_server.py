@@ -10,10 +10,13 @@ Two execution modes:
 
 import atexit
 import http.client
+import json
 import os
 import re
+import signal
 import socket
 import subprocess
+import sys
 import threading
 import time
 from pathlib import Path
@@ -27,6 +30,12 @@ SCRIPTS_DIR = WORKSHOP_DIR / "scripts"
 STREAM_PORT = int(os.environ.get("STREAM_PORT", "18080"))
 MUJOCO_GL = os.environ.get("MUJOCO_GL", "osmesa")
 MAX_SIM_DURATION = 300  # 5 minutes auto-timeout
+
+# Sidecar file written by 03_optimize_pid.py after Phase 2 sweep completes,
+# before Phase 3 starts the streamer. Surfaces the optimizer's best Kp/Kd
+# pair to the MCP layer (which has stdout=DEVNULL, so the script's stdout
+# is unreachable). Single-instance lock guarantees no concurrent writers.
+PID_BEST_SIDECAR = Path(os.environ.get("PID_BEST_OUT", "/tmp/mujoco_best_pid.json"))
 
 # Safe environment for subprocess execution
 # Prepend the venv bin/ to PATH so subprocess finds the correct python with mujoco installed
@@ -75,6 +84,32 @@ def _wait_for_port_free(port: int, timeout: float = 5.0) -> bool:
             return True  # port is free
         time.sleep(0.2)
     return False
+
+
+def _free_stream_port(port: int) -> None:
+    """Force-free the stream port by SIGKILLing ANY process bound to it.
+
+    The single STREAM_PORT is the wedge point. `_stop_active_sim` only kills the
+    *tracked* `_active_sim`; a sim that escaped tracking (overlapping calls, or
+    an auto-stop timer that fired against a later sim) keeps running its infinite
+    streaming loop and holds the port. That orphan then blocks every subsequent
+    `_start_streaming_script`, so the daemon appears to hang and the chatbot
+    reports "physics_workshop_agent not responding". This reaps such orphans.
+    """
+    try:
+        out = subprocess.run(
+            ["ss", "-ltnHp", f"sport = :{port}"],
+            capture_output=True, text=True, timeout=5,
+        ).stdout
+    except (OSError, subprocess.SubprocessError):
+        return
+    for pid in {int(p) for p in re.findall(r"pid=(\d+)", out)}:
+        if pid == os.getpid():
+            continue  # never kill the MCP server itself
+        try:
+            os.kill(pid, signal.SIGKILL)
+        except (ProcessLookupError, PermissionError):
+            pass
 
 
 def _wait_for_snapshot(port: int, timeout: float = 10.0) -> bool:
@@ -129,9 +164,28 @@ def _start_streaming_script(script_name: str, args: list[str] | None = None) -> 
     """
     global _active_sim, _auto_stop_timer
 
-    # Kill any previous simulation first
+    # Delete stale optimizer sidecar before launching. Without this, a
+    # previously-failed run could leave a stale Kp/Kd pair that we'd then
+    # return as if it were from this run.
+    try:
+        PID_BEST_SIDECAR.unlink(missing_ok=True)
+    except OSError as e:
+        print(
+            f"warning: failed to clean stale sidecar {PID_BEST_SIDECAR}: {e!r}",
+            file=sys.stderr,
+        )
+
+    # Kill any previous simulation first (the tracked sim).
     _stop_active_sim()
-    # Wait for port to be released before starting new process
+    # Then UNCONDITIONALLY reap any process still bound to the stream port. An
+    # orphaned sim that escaped _active_sim tracking (overlapping calls, or an
+    # auto-stop timer that fired against a later sim) keeps its infinite streaming
+    # loop alive and holds the single port, which wedges every subsequent start
+    # → the daemon "not responding". Reaping by-port is robust regardless of how
+    # the orphan leaked, and is a cheap no-op in the normal case. Not gated on
+    # _wait_for_port_free, whose connect-probe can mis-read a held port as free.
+    _free_stream_port(STREAM_PORT)
+    # Confirm the port is actually released before starting the new process.
     _wait_for_port_free(STREAM_PORT, timeout=5.0)
 
     script_path = SCRIPTS_DIR / script_name
@@ -187,13 +241,32 @@ def _start_streaming_script(script_name: str, args: list[str] | None = None) -> 
     # Wait for first frame to be rendered (snapshot returns 200, not 503)
     _wait_for_snapshot(STREAM_PORT, timeout=10.0)
 
-    return {
+    # If the script wrote an optimizer sidecar (03_optimize_pid only),
+    # pull the best Kp/Kd into the result dict so the agent can surface it.
+    # Single-shot read: _wait_for_snapshot is the gate — by now Phase 3 has
+    # rendered at least one frame, which means Phase 2's atomic os.replace
+    # of the sidecar completed comfortably earlier. The file is either
+    # present (optimizer success) or permanently absent (non-optimizer
+    # script, or Phase-2 crash). No retry loop needed.
+    best_pid: dict | None = None
+    if PID_BEST_SIDECAR.exists():
+        try:
+            best_pid = json.loads(PID_BEST_SIDECAR.read_text())
+        except (OSError, ValueError) as e:
+            print(f"warning: sidecar parse failed: {e!r}", file=sys.stderr)
+
+    result = {
         "success": True,
         "streaming": True,
         "streaming_url": f"http://0.0.0.0:{STREAM_PORT}/",
         "timeout_seconds": MAX_SIM_DURATION,
         "message": f"シミュレーション実行中（{MAX_SIM_DURATION // 60}分後に自動停止）。",
     }
+    if best_pid:
+        result["best_kp"] = best_pid.get("best_kp")
+        result["best_kd"] = best_pid.get("best_kd")
+        result["best_survival"] = best_pid.get("best_survival")
+    return result
 
 
 def _run_script(script_name: str, args: list[str] | None = None, timeout: int = 120) -> dict:

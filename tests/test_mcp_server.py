@@ -3,6 +3,7 @@
 No MuJoCo needed for most tests. Subprocess is mocked.
 """
 import re
+import signal
 import subprocess
 import sys
 import threading
@@ -21,6 +22,7 @@ from mujoco_mcp_server import (
     MAX_SIM_DURATION,
     _wait_for_port,
     _wait_for_port_free,
+    _free_stream_port,
     _stop_active_sim,
     _start_streaming_script,
     stop_simulation,
@@ -213,10 +215,67 @@ class TestStopActiveSim:
         assert mock_proc.wait.call_count == 2
 
 
+# ── TestFreeStreamPort ───────────────────────────────────────────────
+
+class TestFreeStreamPort:
+    """Test _free_stream_port() — reaps any process holding the stream port.
+
+    Guards against orphaned sims that escape _active_sim tracking and wedge the
+    daemon ("physics_workshop_agent not responding").
+    """
+
+    _SS_LINE = ('LISTEN 0 5 0.0.0.0:18080 0.0.0.0:* '
+                'users:(("python",pid=4242,fd=4))\n')
+
+    @patch("mujoco_mcp_server.os.kill")
+    @patch("mujoco_mcp_server.subprocess.run")
+    def test_kills_port_holder(self, mock_run, mock_kill):
+        mock_run.return_value = MagicMock(stdout=self._SS_LINE)
+        _free_stream_port(18080)
+        mock_kill.assert_called_once_with(4242, signal.SIGKILL)
+
+    @patch("mujoco_mcp_server.os.kill")
+    @patch("mujoco_mcp_server.subprocess.run")
+    def test_noop_when_port_free(self, mock_run, mock_kill):
+        mock_run.return_value = MagicMock(stdout="")
+        _free_stream_port(18080)
+        mock_kill.assert_not_called()
+
+    @patch("mujoco_mcp_server.os.getpid", return_value=4242)
+    @patch("mujoco_mcp_server.os.kill")
+    @patch("mujoco_mcp_server.subprocess.run")
+    def test_never_kills_self(self, mock_run, mock_kill, _mock_getpid):
+        mock_run.return_value = MagicMock(stdout=self._SS_LINE)
+        _free_stream_port(18080)
+        mock_kill.assert_not_called()
+
+    @patch("mujoco_mcp_server.os.kill")
+    @patch("mujoco_mcp_server.subprocess.run", side_effect=OSError("ss missing"))
+    def test_swallows_ss_failure(self, mock_run, mock_kill):
+        _free_stream_port(18080)  # must not raise
+        mock_kill.assert_not_called()
+
+    @patch("mujoco_mcp_server.os.kill", side_effect=ProcessLookupError)
+    @patch("mujoco_mcp_server.subprocess.run")
+    def test_swallows_dead_pid(self, mock_run, mock_kill):
+        mock_run.return_value = MagicMock(stdout=self._SS_LINE)
+        _free_stream_port(18080)  # ProcessLookupError must be swallowed
+        mock_kill.assert_called_once()
+
+
 # ── TestStartStreamingScript ─────────────────────────────────────────
 
 class TestStartStreamingScript:
     """Test _start_streaming_script() helper."""
+
+    @pytest.fixture(autouse=True)
+    def _stub_free_stream_port(self):
+        # _start_streaming_script now calls _free_stream_port(), which shells out
+        # to `ss` via subprocess.run. These unit tests patch subprocess.Popen, so
+        # let the reap be a no-op here; its real behaviour is covered by
+        # TestFreeStreamPort below.
+        with patch("mujoco_mcp_server._free_stream_port"):
+            yield
 
     def _setup_mocks(self, mock_popen, mock_wait_port, mock_wait_free, mock_stop):
         """Common setup for start_streaming_script tests."""

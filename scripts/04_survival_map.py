@@ -241,7 +241,15 @@ def render_survival_map(xs, ys, survival_grid, controller_name):
     XX, YY = np.meshgrid(xs * 1000, ys * 1000)  # メートル→ミリメートルに変換（表示用）
     levels = np.linspace(0, 10, 21)  # 0〜10秒を21段階に分割（0.5秒刻みの等高線）
     # 等高線プロット（色で維持時間を表現）: 緑/黄=長く維持、暗い=すぐ落下
-    cf = ax.contourf(XX, YY, survival_grid, levels=levels, cmap='viridis')
+    # 2026-06-23 修正: contourf は最低 2x2 グリッドを要求する。quick_test は grid=1
+    # （1x1）で実行するため、従来は "Input z must be at least a (2, 2) shaped array"
+    # で必ずクラッシュしていた（維持時間は取得済みでも描画段階で例外→exit 1）。
+    # 1次元以下のグリッドでは imshow にフォールバックして単一セルを描画する。
+    if survival_grid.shape[0] < 2 or survival_grid.shape[1] < 2:
+        cf = ax.imshow(survival_grid, origin='lower', extent=[-140, 140, -140, 140],
+                       vmin=0, vmax=10, cmap='viridis', aspect='auto')
+    else:
+        cf = ax.contourf(XX, YY, survival_grid, levels=levels, cmap='viridis')
     fig.colorbar(cf, label='維持時間 (秒)')  # カラーバー（色と数値の対応表）
     ax.set_xlabel('初期Xオフセット (mm)')
     ax.set_ylabel('初期Yオフセット (mm)')

@@ -28,6 +28,12 @@ mcp = FastMCP("physics-workshop")
 WORKSHOP_DIR = Path(__file__).parent
 SCRIPTS_DIR = WORKSHOP_DIR / "scripts"
 STREAM_PORT = int(os.environ.get("STREAM_PORT", "18080"))
+# Browser-reachable PUBLIC base path for the live stream. `0.0.0.0` (a bind-all
+# sentinel) is NEVER routable from a browser; the v5 edge proxies this same-origin
+# path to the daemon's :18080 (see v5 nginx `location /sim-stream/`). The frontend
+# derives `<base>snapshot` (single JPEG), `<base>stream` (MJPEG), and `<base>` (the
+# HTML viewer w/ camera controls) from this base. Override via STREAM_PUBLIC_URL.
+STREAM_PUBLIC_URL = os.environ.get("STREAM_PUBLIC_URL", "/sim-stream/")
 MUJOCO_GL = os.environ.get("MUJOCO_GL", "osmesa")
 MAX_SIM_DURATION = 300  # 5 minutes auto-timeout
 
@@ -258,7 +264,7 @@ def _start_streaming_script(script_name: str, args: list[str] | None = None) -> 
     result = {
         "success": True,
         "streaming": True,
-        "streaming_url": f"http://0.0.0.0:{STREAM_PORT}/",
+        "streaming_url": STREAM_PUBLIC_URL,
         "timeout_seconds": MAX_SIM_DURATION,
         "message": f"シミュレーション実行中（{MAX_SIM_DURATION // 60}分後に自動停止）。",
     }
@@ -391,7 +397,7 @@ def evaluate_controller(controller_code: str, grid_size: int = 20) -> dict:
     result["perfect_count"] = perfect_count
     result["total_trials"] = total_trials
     result["heatmap_path"] = heatmap_path
-    result["streaming_url"] = f"http://0.0.0.0:{STREAM_PORT}/"
+    result["streaming_url"] = STREAM_PUBLIC_URL
     return result
 
 
@@ -426,5 +432,5 @@ def quick_test_controller(controller_code: str) -> dict:
             survival_time = float(score_match.group(1))
 
     result["survival_time"] = survival_time
-    result["streaming_url"] = f"http://0.0.0.0:{STREAM_PORT}/"
+    result["streaming_url"] = STREAM_PUBLIC_URL
     return result
